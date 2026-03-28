@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nosso Caderno Compartilhado</title>
+    <title>Memories Box</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -12,7 +12,7 @@
 <body>
 
     <div id="telaLogin" class="tela-login">
-        <h2>Caderno Compartilhado</h2>
+        <h2>Memories Box</h2>
         <input type="email" id="inputEmail" placeholder="Seu e-mail">
         <input type="password" id="inputSenha" placeholder="Sua senha">
         <button id="btnEntrar">Entrar</button>
@@ -33,7 +33,6 @@
                     <small>⚙️ Editar Perfil</small>
                 </div>
             </div>
-            <div><button id="btnSairDash" class="btn-sair">Sair da Conta</button></div>
         </div>
 
         <div id="areaConvites" class="caixa-convites escondido">
@@ -46,14 +45,16 @@
             <div class="seletor-cores" id="seletorDeCores">
                 <div class="bolinha-cor selecionada" style="background-color: #2196F3;" data-cor="#2196F3"></div>
                 <div class="bolinha-cor" style="background-color: #4CAF50;" data-cor="#4CAF50"></div>
+                <div class="bolinha-cor" style="background-color: #fdf913;" data-cor="#fdf913"></div>
                 <div class="bolinha-cor" style="background-color: #ff9800;" data-cor="#ff9800"></div>
                 <div class="bolinha-cor" style="background-color: #f44336;" data-cor="#f44336"></div>
                 <div class="bolinha-cor" style="background-color: #9c27b0;" data-cor="#9c27b0"></div>
                 <div class="bolinha-cor" style="background-color: #607d8b;" data-cor="#607d8b"></div>
+                <div class="bolinha-cor" style="background-color: #423c2e;" data-cor="#423c2e"></div>
             </div>
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="inputNovoCaderno" placeholder="Ex: Viagem de Férias...">
-                <button id="btnCriarCaderno">Criar</button>
+                <button id="btnCriarCaderno" style="display: flex; margin-top: 5px; margin-bottom: 5px;">Criar</button>
             </div>
         </div>
 
@@ -87,7 +88,7 @@
 
         <div class="cabecalho-app" style="max-width: 1200px; margin-top: 20px;">
             <div>
-                <button id="btnVoltarDash" class="btn-pequeno">⬅ Voltar</button>
+                <button id="btnVoltarDash" class="btn-pequeno">⬅</button>
                 <h1 id="tituloCadernoAtual" style="margin-top: 10px;">Nome do Caderno 📓</h1>
 
                 <div class="painel-humor" id="painelDeHumor">
@@ -99,25 +100,30 @@
                     <button class="btn-humor" data-humor="🥰" title="Apaixonado">🥰</button>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                <div id="areaUsuariosOnline" class="area-presenca" title="Online Agora" style="margin-bottom: 10px;">
-                </div>
-                <div>
-                    <span id="areaControlesAdmin" class="escondido">
-                        <button id="btnConfigCaderno" class="btn-pequeno">⚙️ Estilo</button>
-                        <button id="btnAbrirModalConvidar"
-                            style="background-color: #ff9800; padding: 6px 10px; border-radius: 5px; color: white; border: none; font-size: 12px; cursor: pointer; margin-right: 5px;">+
-                            Convidar</button>
-                    </span>
-                    <button id="btnVerParticipantes" class="btn-pequeno">👥 Participantes</button>
-                    <button id="btnExportarPDF" class="btn-pequeno" style="background-color: #f44336; color: white;">📄
-                        PDF</button>
+            <div class="cabecalho-direito">
+                <div id="areaUsuariosOnline" class="area-presenca" title="Online Agora"></div>
+                <div class="menu-hamburguer-wrapper">
+                    <button id="btnMenuHamburguer" class="btn-hamburguer" aria-label="Abrir menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <nav id="dropdownMenu" class="dropdown-menu escondido">
+                        <button id="btnConfigCaderno" class="dropdown-item item-admin escondido">⚙️ Estilo do
+                            Caderno</button>
+                        <button id="btnAbrirModalConvidar" class="dropdown-item item-admin escondido">💌 Convidar
+                            Amigo</button>
+                        <div class="dropdown-divider item-admin escondido"></div>
+                        <button id="btnVerParticipantes" class="dropdown-item">👥 Ver Participantes</button>
+                        <button id="btnExportarPDF" class="dropdown-item item-pdf">📄 Exportar PDF</button>
+                    </nav>
                 </div>
             </div>
         </div>
 
         <div class="container" style="max-width: 1200px;">
-            <div class="bloco" style="flex: 2; border: none; background: transparent; box-shadow: none; padding: 0;">
+            <div id="painelEditor" class="bloco"
+                style="flex: 2; border: none; background: transparent; box-shadow: none; padding: 0;">
 
                 <div id="controlesDeEdicao"
                     style="margin-bottom: 10px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
@@ -144,6 +150,7 @@
                         class="btn-sticker">🩹</button><button class="btn-sticker">✈️</button><button
                         class="btn-sticker">☕</button><button class="btn-sticker">🎵</button><button
                         class="btn-sticker">🐱</button><button class="btn-sticker">🔥</button>
+                    <button class="btn-sticker">🎉</button>
                 </div>
 
                 <div class="folha-a4 fundo-limpo fonte-padrao" id="folhaA4Wrapper">
@@ -161,9 +168,9 @@
                 </div>
 
                 <div class="controles-paginacao">
-                    <button id="btnPaginaAnterior" class="btn-pequeno" disabled>⬅️ Anterior</button>
+                    <button id="btnPaginaAnterior" class="btn-pequeno" disabled>⬅️</button>
                     <span id="indicadorPagina" style="font-weight: bold; font-size: 14px;">Página 1</span>
-                    <button id="btnPaginaProxima" class="btn-pequeno" disabled>Próxima ➡️</button>
+                    <button id="btnPaginaProxima" class="btn-pequeno" disabled>➡️</button>
 
                     <span id="controlesEdicaoPagina">
                         <button id="btnNovaPagina" class="btn-pequeno"
@@ -176,24 +183,40 @@
                 </div>
             </div>
 
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+            <div id="painelLateral" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
                 <div id="containerMusica" class="escondido" style="width: 100%;">
-                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 16px; color: #ff9800;">🎵 Nossa Música</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 16px; color: #ff9800;">🎵 Nosso Som</h3>
                     <div id="widgetMusica"
                         style="width: 100%; border-radius: 12px; overflow: hidden; background-color: var(--bg-caixas); border: 1px solid var(--borda);">
                     </div>
                 </div>
 
-                <div class="bloco" style="margin-bottom: 0;">
-                    <h2>Planos</h2>
+                <div id="containerPlanos" class="bloco" style="margin-bottom: 0;">
+                    <h2>Planos/Metas</h2>
                     <ul id="listaTarefas"></ul>
                     <div id="controlesTarefas" style="display: flex; gap: 5px; margin-top: 15px;">
                         <input type="text" id="inputNovaTarefa" placeholder="Nova tarefa...">
-                        <button id="btnAdicionarTarefa">Add</button>
+                        <button id="btnAdicionarTarefa"
+                            style="display: flex; margin-top: 5px; margin-bottom: 5px;">Add</button>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- NAV MOBILE — adicionar antes do fechamento da telaApp -->
+        <nav id="navMobile" class="nav-mobile">
+            <button class="nav-mobile-btn ativo" data-painel="editor">
+                <span class="nav-icone">📖</span>
+                <span class="nav-label">Caderno</span>
+            </button>
+            <button class="nav-mobile-btn" data-painel="musica">
+                <span class="nav-icone">🎵</span>
+                <span class="nav-label">Música</span>
+            </button>
+            <button class="nav-mobile-btn" data-painel="planos">
+                <span class="nav-icone">✅</span>
+                <span class="nav-label">Planos</span>
+            </button>
+        </nav>
     </div>
 
     <div id="modalConfig" class="modal-overlay escondido">
@@ -202,7 +225,7 @@
             <div style="text-align: center; margin-bottom: 20px;">
                 <img id="avatarConfig" class="avatar" style="width: 70px; height: 70px; margin-bottom: 10px;" src=""
                     alt="Foto"><br>
-                <label for="inputFotoPerfil" class="label-arquivo">📸 Escolher Nova Foto</label>
+                <label for="inputFotoPerfil" class="label-arquivo">📸 Nova Foto</label>
                 <input type="file" id="inputFotoPerfil" class="input-arquivo-oculto" accept="image/*">
             </div>
             <div style="text-align: left; margin-bottom: 15px;">
@@ -220,7 +243,8 @@
                 <label style="font-weight: bold;">🌙 Modo Escuro:</label>
                 <label class="switch"><input type="checkbox" id="toggleModoEscuro"><span class="slider"></span></label>
             </div>
-            <button class="btn-sair btn-fechar-modal" style="width: 100%;">Fechar</button>
+            <button id="btnSairDash" class="btn-sair" style="width: 100%;">Sair da Conta</button>
+            <button class="btn-sair btn-fechar-modal" style="width: 100%;margin-top: 10px">Fechar</button>
         </div>
     </div>
 
@@ -235,10 +259,12 @@
                 <div class="seletor-cores" id="seletorCorCadernoAtual" style="margin-bottom: 15px;">
                     <div class="bolinha-cor" style="background-color: #2196F3;" data-cor="#2196F3"></div>
                     <div class="bolinha-cor" style="background-color: #4CAF50;" data-cor="#4CAF50"></div>
+                    <div class="bolinha-cor" style="background-color: #fdf913;" data-cor="#fdf913"></div>
                     <div class="bolinha-cor" style="background-color: #ff9800;" data-cor="#ff9800"></div>
                     <div class="bolinha-cor" style="background-color: #f44336;" data-cor="#f44336"></div>
                     <div class="bolinha-cor" style="background-color: #9c27b0;" data-cor="#9c27b0"></div>
                     <div class="bolinha-cor" style="background-color: #607d8b;" data-cor="#607d8b"></div>
+                    <div class="bolinha-cor" style="background-color: #423c2e;" data-cor="#423c2e"></div>
                 </div>
 
                 <label>Fonte da Letra:</label>
@@ -259,8 +285,8 @@
                 </select>
 
                 <hr>
-                <label>🎵 Música / Playlist (Link do YouTube ou Spotify):</label>
-                <input type="text" id="inputLinkMusica" placeholder="Cole o link do YouTube ou Spotify..."
+                <label>🎵 Música / Playlist (Link do Spotify):</label>
+                <input type="text" id="inputLinkMusica" placeholder="Cole o link do Spotify..."
                     style="margin-bottom: 15px; font-size: 12px;">
 
                 <button id="btnSalvarConfigCaderno" style="width: 100%; margin-bottom: 10px;">Salvar Estilo</button>
@@ -295,8 +321,8 @@
     </div>
     <div id="modalApagarTarefa" class="modal-overlay escondido">
         <div class="modal-conteudo">
-            <h2>🗑️ Apagar Plano</h2>
-            <p>Tem certeza que deseja apagar este plano?</p>
+            <h2>🗑️ Apagar Atividade</h2>
+            <p>Tem certeza que deseja apagar esta atividade?</p>
             <p id="textoTarefaApagar"
                 style="font-style: italic; color: var(--texto-secundario); font-size: 13px; margin-bottom: 20px;"></p>
             <button id="btnConfirmarApagarTarefa" class="btn-sair" style="width: 100%; margin-bottom: 10px;">Sim,
@@ -306,7 +332,7 @@
     </div>
     <div id="modalEditarTarefa" class="modal-overlay escondido">
         <div class="modal-conteudo">
-            <h2>✏️ Editar Plano</h2><input type="text" id="inputEdicaoTarefa" style="margin-bottom: 15px;"><button
+            <h2>✏️ Editar Atividade</h2><input type="text" id="inputEdicaoTarefa" style="margin-bottom: 15px;"><button
                 id="btnSalvarEdicaoTarefa" style="width: 100%; margin-bottom: 10px;">Salvar Alteração</button><button
                 class="btn-secundario btn-fechar-modal" style="background-color: gray; width: 100%;">Cancelar</button>
         </div>
@@ -325,7 +351,7 @@
     <div id="modalExcluirCaderno" class="modal-overlay escondido">
         <div class="modal-conteudo">
             <h2 style="color: #f44336;">⚠️ EXCLUIR CADERNO</h2>
-            <p>Você tem certeza absoluta? Isso apagará <b>todas as histórias, fotos e planos</b> para todos os
+            <p>Você tem certeza absoluta? Isso apagará <b>todas as histórias criadas</b> para todos os
                 participantes.</p><input type="text" id="inputConfirmarNomeCaderno"
                 placeholder="Digite o nome do caderno para confirmar"
                 style="margin-bottom: 15px; border-color: #f44336;"><button id="btnConfirmarExcluirCaderno"
