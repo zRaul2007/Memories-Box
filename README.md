@@ -35,4 +35,6 @@ O projeto funciona como uma mescla de editor de texto rico, lousa de desenhos (c
 2. Crie um projeto no [Firebase](https://firebase.google.com/) e ative o **Authentication** (Email/Senha) e o **Realtime Database**.
 3. No arquivo `main.js`, substitua o objeto `firebaseConfig` pelas credenciais do seu projeto Firebase.
 5. Abra o arquivo index.html em um navegador (recomenda-se o uso de um Live Server genérico para evitar problemas de CORS com os módulos do Firebase).
+
+
 Criado com ❤, Raul Pedrogan.
