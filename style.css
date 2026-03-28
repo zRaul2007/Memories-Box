@@ -88,8 +88,8 @@ h3 {
 }
 
 .avatar-pequeno {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--borda);
@@ -815,4 +815,307 @@ input:checked+.slider:before {
 
 .cargo-leitor {
     background-color: #607d8b;
+}
+
+/* ==========================================
+   HAMBURGER MENU
+   ========================================== */
+.cabecalho-direito {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.menu-hamburguer-wrapper {
+    position: relative;
+}
+
+.btn-hamburguer {
+    background: var(--bg-caixas);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-hamburguer:hover {
+    background-color: var(--bg-fundo);
+    opacity: 1;
+}
+
+.btn-hamburguer span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background-color: var(--texto-principal);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+    transform-origin: center;
+}
+
+.btn-hamburguer.aberto span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.btn-hamburguer.aberto span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.btn-hamburguer.aberto span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-caixas);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    min-width: 210px;
+    z-index: 500;
+    overflow: hidden;
+    animation: fadeInDown 0.15s ease forwards;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: var(--texto-principal);
+    font-size: 14px;
+    font-weight: normal;
+    text-align: left;
+    cursor: pointer;
+    gap: 10px;
+    transition: background-color 0.15s;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-fundo);
+    opacity: 1;
+}
+
+.dropdown-item.item-pdf {
+    color: #f44336;
+}
+
+.dropdown-item.item-pdf:hover {
+    background-color: #fff5f5;
+}
+
+body.dark-mode .dropdown-item.item-pdf:hover {
+    background-color: #3e1a1a;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--borda);
+    margin: 4px 0;
+}
+
+/* ==========================================
+   BOTTOM NAV MOBILE
+   ========================================== */
+.nav-mobile {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-caixas);
+    border-top: 1px solid var(--borda);
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.nav-mobile-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--texto-secundario);
+    padding: 10px 8px;
+    cursor: pointer;
+    font-weight: normal;
+    transition: color 0.2s;
+    border-radius: 0;
+    width: 100%;
+}
+
+.nav-mobile-btn:hover {
+    opacity: 1;
+}
+
+.nav-mobile-btn .nav-icone {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.nav-mobile-btn .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: inherit;
+}
+
+.nav-mobile-btn.ativo {
+    color: #2196F3;
+}
+
+/* Classe para ocultar painéis na troca de abas mobile */
+.painel-mobile-oculto {
+    display: none !important;
+}
+
+/* ==========================================
+   RESPONSIVIDADE MOBILE
+   ========================================== */
+@media (max-width: 768px) {
+
+    .nav-mobile {
+        display: grid;
+    }
+
+    /* Padding para não cobrir conteúdo com a nav */
+    .tela-app {
+        padding-bottom: 75px;
+    }
+
+    body {
+        padding: 12px 10px;
+    }
+
+    /* Header empilha */
+    .cabecalho-app {
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .cabecalho-app h1 {
+        font-size: 18px;
+        margin-top: 6px;
+    }
+
+    .cabecalho-direito {
+        margin-top: 4px;
+    }
+
+    /* Container empilha verticalmente */
+    .container {
+        flex-direction: column;
+    }
+
+    #painelEditor,
+    #painelLateral {
+        flex: none !important;
+        width: 100%;
+    }
+
+    /* Lateral ocupa largura total */
+    #painelLateral {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Folha A4 sem scroll horizontal */
+    .folha-a4 {
+        max-width: 100%;
+    }
+
+    .editor-rico {
+        padding: 20px 16px;
+        font-size: 15px;
+        min-height: 600px;
+    }
+
+    /* Controles de edição compactos */
+    #controlesDeEdicao {
+        gap: 6px;
+    }
+
+    #controlesDeEdicao button,
+    #controlesDeEdicao label {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    /* Paginação em duas linhas */
+    .controles-paginacao {
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    /* Mood panel compacto */
+    .painel-humor {
+        gap: 5px;
+        padding: 5px 8px;
+    }
+
+    .btn-humor {
+        font-size: 18px;
+    }
+
+    /* Bloco lateral sem margin extra */
+    .bloco {
+        margin-bottom: 10px;
+    }
+
+    /* Polaroids em telas menores */
+    .polaroid {
+        max-width: 80% !important;
+    }
+
+    /* Botão voltar + título lado a lado */
+    .tela-app>.cabecalho-app>div:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Dashboard */
+    .tela-dashboard {
+        width: 100%;
+    }
+
+    .cabecalho-app {
+        align-items: flex-start;
+    }
 }
