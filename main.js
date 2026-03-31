@@ -941,26 +941,20 @@ caixaDeTexto.addEventListener('input', () => {
 });
 
 // ==========================================
-// CORREÇÃO: FORÇAR CURSOR NO FUNDO VAZIO
+// CORREÇÃO: FORÇAR CURSOR NO FUNDO VAZIO (Versão Suave)
 // ==========================================
 caixaDeTexto.addEventListener('click', (e) => {
     if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
 
-    // Se clicou no fundo pontilhado da folha (e não numa foto/ingresso)
+    // Se clicou no fundo pontilhado da folha
     if (e.target === caixaDeTexto) {
-        // Garante que exista um espaço para o texto nascer
-        if (!caixaDeTexto.lastChild || caixaDeTexto.lastChild.nodeName !== 'BR') {
+        // Em vez de roubar o cursor, só criamos um espaço seguro no final
+        // APENAS SE o último item da folha for uma foto ou objeto (que bloqueiam o clique nativo)
+        const ultimoFilho = caixaDeTexto.lastElementChild;
+        if (ultimoFilho && ultimoFilho.contentEditable === "false") {
+            caixaDeTexto.appendChild(document.createElement('br'));
             caixaDeTexto.appendChild(document.createElement('br'));
         }
-
-        // Mágica para forçar o navegador a jogar o cursor piscante no final da folha
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(caixaDeTexto);
-        range.collapse(false); // false = final do conteúdo
-        sel.removeAllRanges();
-        sel.addRange(range);
-        caixaDeTexto.focus();
     }
 });
 
