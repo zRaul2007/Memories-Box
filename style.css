@@ -1,24 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 
 :root {
-    --bg-fundo: #fdfbf7;
-    --bg-caixas: #ffffff;
-    --texto-principal: #333333;
-    --texto-secundario: gray;
-    --borda: #e0e0e0;
+    /* Cores de papel creme, quente e aconchegante */
+    --bg-fundo: #f4eee1;
+    --bg-caixas: #faf7f0;
+    --texto-principal: #3e3832;
+    --texto-secundario: #8c7b6c;
+    --borda: #dcd0c0;
+    /* Adicionando uma textura sutil de papel */
+    --textura: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
 body.dark-mode {
-    --bg-fundo: #121212;
-    --bg-caixas: #1e1e1e;
-    --texto-principal: #f5f5f5;
-    --texto-secundario: #aaaaaa;
-    --borda: #333333;
+    /* Tons de madeira escura e noite */
+    --bg-fundo: #1a1816;
+    --bg-caixas: #262320;
+    --texto-principal: #e8e4db;
+    --texto-secundario: #9e9387;
+    --borda: #3b3631;
 }
 
 body {
+    /* Mantém o que você tem, mas adiciona a textura ao fundo */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-fundo);
+    background-image: var(--textura);
+    /* Magia aqui */
     color: var(--texto-principal);
     display: flex;
     flex-direction: column;
@@ -40,14 +47,61 @@ h3 {
     margin-top: 0;
 }
 
+/* --- Substitua a classe .tela-login e adicione a estilização do H2 e do ::before --- */
+
 .tela-login {
     background: var(--bg-caixas);
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.2);
-    width: 300px;
+    background-image: var(--textura);
+    /* Traz a textura de papel pra cá também */
+    padding: 50px 40px;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), inset 0 0 0 2px var(--borda);
+    width: 320px;
     text-align: center;
-    margin-top: 50px;
+    margin-top: 10vh;
+    position: relative;
+    border: 1px solid var(--borda);
+}
+
+/* Fita adesiva segurando a tela de login */
+.tela-login::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%) rotate(2deg);
+    width: 120px;
+    height: 35px;
+    background-color: rgba(255, 255, 200, 0.4);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+body.dark-mode .tela-login::before {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Fonte estilo escrita à mão para o título principal */
+.tela-login h2 {
+    font-family: 'Caveat', cursive;
+    font-size: 48px;
+    color: var(--texto-principal);
+    margin-bottom: 5px;
+    margin-top: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Uma subtítulo sutil para dar o tom íntimo */
+.tela-login::after {
+    content: 'Seu espaço seguro.';
+    display: block;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    color: var(--texto-secundario);
+    margin-top: -15px;
+    margin-bottom: 25px;
+    font-style: italic;
 }
 
 .tela-app,
@@ -243,31 +297,53 @@ input[type="checkbox"] {
 }
 
 button {
-    padding: 10px;
+    padding: 10px 15px;
     background-color: #4CAF50;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    transition: opacity 0.2s;
+    box-shadow: 0 4px 0 #388E3C, 0 5px 10px rgba(0, 0, 0, 0.2);
+    /* Borda 3D inferior */
+    transition: all 0.1s ease;
+}
+
+button:active {
+    transform: translateY(4px);
+    /* Botão afunda ao clicar */
+    box-shadow: 0 0 0 #388E3C, 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {
-    opacity: 0.8;
+    filter: brightness(1.1);
 }
 
 button:disabled {
     opacity: 0.5;
+    transform: none;
+    box-shadow: none;
     cursor: not-allowed;
 }
 
 .btn-secundario {
     background-color: #2196F3;
+    box-shadow: 0 4px 0 #1976D2, 0 5px 10px rgba(0, 0, 0, 0.2);
+    /* Sombra azul escura */
+}
+
+.btn-secundario:active {
+    box-shadow: 0 0 0 #1976D2, 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .btn-sair {
     background-color: #f44336;
+    box-shadow: 0 4px 0 #d32f2f, 0 5px 10px rgba(0, 0, 0, 0.2);
+    /* Sombra vermelha escura */
+}
+
+.btn-sair:active {
+    box-shadow: 0 0 0 #d32f2f, 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .btn-pequeno {
@@ -276,6 +352,30 @@ button:disabled {
     background-color: var(--borda);
     color: var(--texto-principal);
     margin: 2px;
+    /* Sombra neutra adaptável ao modo claro/escuro */
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-pequeno:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Proteção para os botões que são apenas ícones não ficarem com blocos 3D estranhos */
+.btn-format,
+.btn-sticker,
+.btn-humor,
+.btn-hamburguer,
+.nav-mobile-btn {
+    box-shadow: none !important;
+}
+
+.btn-format:active,
+.btn-sticker:active,
+.btn-humor:active {
+    transform: scale(0.9) !important;
+    /* Efeito de aperto apenas reduzindo o tamanho */
+    box-shadow: none !important;
 }
 
 .input-arquivo-oculto {
@@ -355,17 +455,25 @@ body.dark-mode .caixa-convites {
     position: relative;
     width: 100%;
     max-width: 800px;
+    height: 1122px;
+    /* Altura exata de uma Folha A4 na web */
+    max-height: 1122px;
     margin: 0 auto;
     border: 1px solid var(--borda);
     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     box-sizing: border-box;
     overflow: hidden;
+    /* Nada vaza da folha! */
 }
 
 .editor-rico {
     width: 100%;
-    min-height: 1000px;
+    height: 100%;
+    /* Preenche a folha inteira */
+    max-height: 100%;
+    overflow-y: auto;
+    /* Se digitar muito, rola apenas o texto, sem esticar o papel */
     font-size: 16px;
     padding: 40px;
     box-sizing: border-box;
@@ -373,6 +481,25 @@ body.dark-mode .caixa-convites {
     line-height: 1.6;
     z-index: 1;
     position: relative;
+    padding-bottom: 150px;
+    /* Espaço de sobra no final da página */
+}
+
+.editor-rico::-webkit-scrollbar {
+    width: 6px;
+}
+
+.editor-rico::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.editor-rico:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .editor-rico:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .editor-rico img {
@@ -390,6 +517,35 @@ body.dark-mode .caixa-convites {
     transition: transform 0.2s, box-shadow 0.2s;
     max-width: 45%;
     border: 1px solid #ddd;
+}
+
+/* --- Adicione este bloco ABAIXO da regra .polaroid { ... } --- */
+
+.polaroid {
+    position: relative;
+    /* Garante que a fita fique presa nela */
+}
+
+/* Criando o durex/fita adesiva no topo da foto */
+.polaroid::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 80px;
+    height: 25px;
+    background-color: rgba(255, 255, 200, 0.4);
+    /* Amarelado translúcido */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    backdrop-filter: blur(2px);
+    /* Efeito de durex realista */
+}
+
+body.dark-mode .polaroid::before {
+    background-color: rgba(255, 255, 255, 0.15);
+    /* Fita mais opaca no escuro */
 }
 
 .polaroid:nth-child(even) {
@@ -411,6 +567,14 @@ body.dark-mode .caixa-convites {
     width: 100%;
     border: 1px solid #eee;
     display: block;
+}
+
+.polaroid-img,
+.polaroid,
+.fita-cassete {
+    /* Proíbe o navegador de iniciar o "arrastar arquivo" nesses elementos */
+    -webkit-user-drag: none;
+    user-drag: none;
 }
 
 .polaroid-legenda {
@@ -754,42 +918,56 @@ input:checked+.slider:before {
 
 .toolbar-flutuante {
     position: fixed;
-    background-color: #222;
+    background: rgba(30, 30, 30, 0.75);
+    /* Fundo translúcido */
+    backdrop-filter: blur(12px);
+    /* Efeito de vidro jateado */
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    /* Bordinha de brilho */
     color: white;
-    padding: 5px 10px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    padding: 6px 8px;
+    border-radius: 16px;
+    /* Formato de pílula */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 4px;
     z-index: 2000;
-    transition: opacity 0.2s;
-    transform: translate(-50%, -100%);
-    margin-top: -10px;
+    transition: opacity 0.2s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translate(-50%, -100%) scale(1);
+    margin-top: -12px;
 }
 
+/* Esconde o antigo triângulo que apontava pra baixo */
 .toolbar-flutuante::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #222 transparent transparent transparent;
+    display: none;
 }
 
 .btn-format {
-    background: none;
+    background: transparent;
     border: none;
-    color: white;
+    color: #f1f1f1;
     cursor: pointer;
-    font-size: 14px;
-    padding: 5px;
-    border-radius: 4px;
+    font-size: 16px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-format:hover {
-    background-color: #444;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.divisor-toolbar {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
 }
 
 .tag-cargo {
@@ -946,6 +1124,7 @@ body.dark-mode .dropdown-item.item-pdf:hover {
    ========================================== */
 .nav-mobile {
     display: none;
+    grid-template-columns: repeat(4, 1fr);
     position: fixed;
     bottom: 0;
     left: 0;
@@ -955,7 +1134,6 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     z-index: 200;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-    grid-template-columns: repeat(3, 1fr);
 }
 
 .nav-mobile-btn {
@@ -1002,69 +1180,270 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 /* ==========================================
-   RESPONSIVIDADE MOBILE
+   OBJETOS FLUTUANTES (Ingresso, Carta, Raspadinha)
+   ========================================== */
+.obj-flutuante {
+    position: absolute;
+    display: inline-block;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    z-index: 15;
+    transform: rotate(var(--rot, 0deg));
+    transition: filter 0.2s;
+}
+
+.obj-flutuante:hover {
+    z-index: 20;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+    transform: rotate(var(--rot, 0deg)) scale(1.03);
+}
+
+.drag-handle {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    cursor: grab;
+    font-size: 12px;
+    z-index: 25;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.drag-handle::before {
+    content: '⠿';
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+.obj-flutuante:hover .drag-handle {
+    opacity: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* --- A CARTA (ENVELOPE ANIMADO) --- */
+.carta-container {
+    width: 100%;
+    aspect-ratio: 250 / 160;
+    position: relative;
+    perspective: 800px;
+    container-type: inline-size;
+    /* A MÁGICA: Corta o excesso apenas na parte de baixo. O papel pode subir, mas nunca descer da base do envelope! */
+    clip-path: polygon(-50% -200%, 150% -200%, 150% 100%, -50% 100%);
+}
+
+.envelope-costas,
+.envelope-frente,
+.envelope-aba,
+.carta-papel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.envelope-costas {
+    background: #e3d5b8;
+    border-radius: 4px;
+    z-index: 1 !important;
+    /* Camada 1: O Fundo */
+}
+
+.carta-papel {
+    background: #fffdf8;
+    width: 90%;
+    height: 150%;
+    /* Bem longo para o fundo nunca aparecer */
+    top: 5%;
+    left: 5%;
+    z-index: 2 !important;
+    /* Camada 2: O Papel (ESTRITAMENTE NO MEIO) */
+    padding: 8%;
+    box-sizing: border-box;
+    font-family: 'Caveat', cursive;
+    font-size: 8cqw;
+    color: #333;
+    border: 1px solid #eee;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.envelope-frente {
+    z-index: 3 !important;
+    /* Camada 3: A Frente (COBRE O PAPEL) */
+    pointer-events: none;
+    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.envelope-aba {
+    z-index: 4 !important;
+    /* Camada 4: A Aba (Por cima de tudo quando fechada) */
+    transform-origin: top;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.6s;
+}
+
+.selo-cera {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 45px;
+    height: 45px;
+    background: radial-gradient(#a00, #700);
+    border-radius: 50%;
+    z-index: 5 !important;
+    /* Camada 5: O Selo */
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 5px #500;
+    transition: transform 0.3s, opacity 0.3s;
+}
+
+.selo-cera::after {
+    content: '👑';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    opacity: 0.6;
+}
+
+.selo-cera:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* --- O ESTADO ABERTO --- */
+.carta-container.aberta .envelope-aba {
+    transform: rotateX(180deg);
+    z-index: 1 !important;
+    /* A aba vai para trás do papel! */
+}
+
+.carta-container.aberta .carta-papel {
+    transform: translateY(-30%);
+    /* O Papel sobe */
+    z-index: 2 !important;
+    /* MAS CONTINUA ATRÁS DA FRENTE DO ENVELOPE */
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.carta-container.aberta .selo-cera {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.5);
+}
+
+/* --- A RASPADINHA --- */
+.raspadinha-container {
+    width: 100%;
+    aspect-ratio: 260 / 120;
+    /* Proporção de bilhete de loteria */
+    background: #fff;
+    padding: 5%;
+    border-radius: 8px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    border: 2px dashed #ccc;
+    text-align: center;
+    position: relative;
+    container-type: inline-size;
+    /* Mágica para a fonte */
+}
+
+.raspadinha-texto {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 8cqw;
+    /* Cresce e diminui com o objeto */
+    font-weight: bold;
+    color: #e74c3c;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    overflow: hidden;
+    word-wrap: break-word;
+    text-wrap: balance;
+    line-height: 1.1;
+}
+
+.raspadinha-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>') 12 12, crosshair;
+    z-index: 2;
+    touch-action: none;
+}
+
+/* ==========================================
+   O SCROLL MOBILE PERFEITO (Mesa estática)
    ========================================== */
 @media (max-width: 768px) {
-
-    .nav-mobile {
-        display: grid;
-    }
-
-    /* Padding para não cobrir conteúdo com a nav */
     .tela-app {
+        overflow-x: hidden;
+        /* Trava o app inteiro para não sambar pros lados */
         padding-bottom: 75px;
     }
 
-    body {
-        padding: 12px 10px;
+    /* O painel do editor vira a "janela" por onde vemos a folha */
+    #painelEditor {
+        width: 100vw !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        /* Deslize suave no iOS */
+        padding-bottom: 20px;
+        scrollbar-width: none;
+        margin-left: -10px;
+        /* Compensa o padding lateral do body */
     }
 
-    /* Header empilha */
+    #painelEditor::-webkit-scrollbar {
+        display: none;
+    }
+
+    .folha-a4 {
+        min-width: 800px !important;
+        margin: 0 10px !important;
+    }
+
     .cabecalho-app {
         flex-wrap: wrap;
         gap: 8px;
         align-items: flex-start;
     }
 
-    .cabecalho-app h1 {
-        font-size: 18px;
-        margin-top: 6px;
-    }
-
-    .cabecalho-direito {
-        margin-top: 4px;
-    }
-
-    /* Container empilha verticalmente */
     .container {
         flex-direction: column;
     }
 
-    #painelEditor,
-    #painelLateral {
-        flex: none !important;
-        width: 100%;
-    }
-
-    /* Lateral ocupa largura total */
     #painelLateral {
         display: flex;
         flex-direction: column;
         gap: 15px;
+        flex: none !important;
+        width: 100%;
     }
 
-    /* Folha A4 sem scroll horizontal */
-    .folha-a4 {
-        max-width: 100%;
-    }
-
-    .editor-rico {
-        padding: 20px 16px;
-        font-size: 15px;
-        min-height: 600px;
-    }
-
-    /* Controles de edição compactos */
     #controlesDeEdicao {
         gap: 6px;
     }
@@ -1075,14 +1454,12 @@ body.dark-mode .dropdown-item.item-pdf:hover {
         padding: 6px 10px;
     }
 
-    /* Paginação em duas linhas */
     .controles-paginacao {
         flex-wrap: wrap;
         gap: 6px;
         justify-content: center;
     }
 
-    /* Mood panel compacto */
     .painel-humor {
         gap: 5px;
         padding: 5px 8px;
@@ -1092,30 +1469,686 @@ body.dark-mode .dropdown-item.item-pdf:hover {
         font-size: 18px;
     }
 
-    /* Bloco lateral sem margin extra */
-    .bloco {
-        margin-bottom: 10px;
-    }
-
-    /* Polaroids em telas menores */
     .polaroid {
         max-width: 80% !important;
     }
 
-    /* Botão voltar + título lado a lado */
-    .tela-app>.cabecalho-app>div:first-child {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
+    .nav-mobile {
+        display: grid;
     }
 
-    /* Dashboard */
-    .tela-dashboard {
-        width: 100%;
+    /* Gruda os controles no topo e no rodapé para não fugirem no scroll horizontal */
+    #controlesDeEdicao,
+    .controles-paginacao {
+        position: sticky;
+        left: 0;
+        width: 100vw;
+        background: var(--bg-caixas);
+        /* Fundo sólido para o texto não vazar por baixo */
+        z-index: 100;
+        box-sizing: border-box;
+        padding: 10px 5px;
+        border-bottom: 1px solid var(--borda);
     }
 
-    .cabecalho-app {
-        align-items: flex-start;
+    .controles-paginacao {
+        border-bottom: none;
+        border-top: 1px solid var(--borda);
     }
+
+    #menuStickers {
+        position: sticky;
+        left: 10px;
+        width: calc(100vw - 20px);
+        z-index: 101;
+    }
+}
+
+/* --- A FITA CASSETE (MIXTAPE VIBE) --- */
+.fita-cassete {
+    position: relative;
+    /* Container âncora */
+    display: inline-block;
+    cursor: pointer;
+    background: transparent;
+    padding: 0;
+    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Inclinação analógica na página */
+.fita-cassete:nth-child(even) {
+    transform: rotate(-1.5deg);
+}
+
+.fita-cassete:nth-child(odd) {
+    transform: rotate(1.5deg);
+}
+
+.fita-cassete:hover {
+    transform: scale(1.03) rotate(0deg);
+    z-index: 10;
+}
+
+/* Título imitando escrita à mão com caneta na etiqueta de papel */
+.fita-titulo {
+    position: absolute;
+    top: 14%;
+    left: 10%;
+    width: 80%;
+    text-align: center;
+    font-family: 'Caveat', cursive;
+    font-size: 26px;
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: text;
+
+    /* A mágica da legibilidade: Contorno preto sólido na fonte */
+    -webkit-text-stroke: 0.5px #000000;
+
+    /* Uma sombra extra atrás do contorno para dar profundidade (efeito 3D) */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Modifica o player HTML5 padrão para se camuflar no plástico escuro da fita */
+.fita-player {
+    position: absolute;
+    bottom: 9%;
+    /* Encaixado dentro do trapézio inferior */
+    left: 18%;
+    width: 64%;
+    height: 28px;
+    border-radius: 14px;
+    opacity: 0.6;
+    /* Fica meio transparente e "escondido" */
+    transition: opacity 0.3s;
+    /* Um truque CSS para escurecer o player nativo do navegador */
+    filter: grayscale(100%) contrast(1.2) brightness(0.8);
+}
+
+/* Quando você for dar play, ele acende */
+.fita-cassete:hover .fita-player,
+.fita-player:focus,
+.fita-player:active {
+    opacity: 0.95;
+    filter: grayscale(100%) contrast(1) brightness(1);
+}
+
+body.dark-mode .fita-cassete {
+    background: transparent;
+    /* Mantém transparente no modo escuro */
+}
+
+/* ==========================================
+   MODO LANTERNA (Foco Total)
+   ========================================== */
+body.modo-lanterna {
+    background-color: #050505 !important;
+    background-image: none !important;
+}
+
+body.modo-lanterna::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 50% 50%, transparent 20%, rgba(0, 0, 0, 0.92) 80%);
+    pointer-events: none;
+    z-index: 900;
+}
+
+/* Escurece APENAS os itens secundários, poupando o Menu e a Paginação */
+body.modo-lanterna .tela-app>.cabecalho-app>div:first-child,
+/* Título e Humor */
+body.modo-lanterna .area-presenca,
+/* Avatares */
+body.modo-lanterna #painelLateral,
+body.modo-lanterna .nav-mobile,
+body.modo-lanterna #controlesDeEdicao {
+    opacity: 0.15;
+    transition: opacity 0.3s ease;
+}
+
+/* Hover acende as partes escuras */
+body.modo-lanterna .tela-app>.cabecalho-app>div:first-child:hover,
+body.modo-lanterna .area-presenca:hover,
+body.modo-lanterna #painelLateral:hover,
+body.modo-lanterna .nav-mobile:hover,
+body.modo-lanterna #controlesDeEdicao:hover {
+    opacity: 1;
+}
+
+/* ELEVA O MENU E A PAGINAÇÃO PARA A LUZ */
+body.modo-lanterna .menu-hamburguer-wrapper,
+body.modo-lanterna .controles-paginacao,
+body.modo-lanterna .folha-a4 {
+    z-index: 901;
+    /* Ficam acima da sombra do ::before */
+    position: relative;
+}
+
+body.modo-lanterna .folha-a4 {
+    box-shadow: 0 0 50px rgba(255, 255, 200, 0.15) !important;
+}
+
+/* ==========================================
+   O INGRESSO (TICKET STUB LIVRE)
+   ========================================== */
+.ingresso-card {
+    /* Agora ele é absoluto para flutuar pela página */
+    position: absolute;
+    display: inline-block;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    z-index: 15;
+    transition: filter 0.2s;
+}
+
+.ingresso-card:hover {
+    z-index: 20;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+}
+
+/* A Alça de Arrasto (Só aparece quando passa o mouse) */
+.ingresso-card {
+    position: absolute;
+    display: inline-block;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    z-index: 15;
+    /* Usando variável CSS para não perder a rotação durante o Hover! */
+    transform: rotate(var(--rot, 0deg));
+    transition: filter 0.2s;
+}
+
+.ingresso-card:hover {
+    z-index: 20;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+    transform: rotate(var(--rot, 0deg)) scale(1.03);
+    /* Mantém o ângulo e dá um leve zoom */
+}
+
+/* Alça sutil e elegante, no topo do ingresso */
+.ingresso-drag-handle {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    cursor: grab;
+    font-size: 12px;
+    font-weight: normal;
+    letter-spacing: 1px;
+    z-index: 25;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.ingresso-drag-handle::before {
+    content: '⠿';
+    /* Ícone minimalista de arrastar */
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+.ingresso-card:hover .ingresso-drag-handle {
+    opacity: 1;
+}
+
+.ingresso-drag-handle:active {
+    cursor: grabbing;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.ingresso-texto {
+    position: absolute;
+    font-family: 'Courier Prime', monospace;
+    color: #333;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: text;
+}
+
+/* Textos ajustados ao SVG */
+.ingresso-evento {
+    top: 25%;
+    left: 10%;
+    width: 55%;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.ingresso-data {
+    top: 55%;
+    left: 10%;
+    width: 35%;
+    font-size: 13px;
+    color: #555;
+}
+
+.ingresso-assento {
+    top: 55%;
+    left: 45%;
+    width: 20%;
+    font-size: 13px;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+body.dark-mode .ingresso-texto {
+    color: #111;
+}
+
+/* --- ESTILOS PARA ARRASTO DE TAREFAS --- */
+.tarefa-item {
+    transition: background 0.2s, transform 0.2s;
+    user-select: none;
+    /* Evita selecionar o texto sem querer ao segurar */
+    touch-action: pan-y;
+    /* Permite scroll da tela, mas não interfere no arrasto */
+}
+
+.tarefa-pronta-arrasto {
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    position: relative;
+    border-radius: 4px;
+}
+
+.tarefa-fantasma {
+    opacity: 0.3;
+    border: 2px dashed var(--borda);
+}
+
+/* Customização da barra de rolagem da Carta Aberta */
+#conteudoLeituraCarta::-webkit-scrollbar {
+    width: 6px;
+}
+
+#conteudoLeituraCarta::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* --- GRADE 2x2 PARA OS BOTÕES STICKERS ESPECIAIS --- */
+.grid-botoes-objetos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+    margin-top: 10px;
+    border-top: 1px solid var(--borda);
+    padding-top: 10px;
+}
+
+.grid-botoes-objetos button {
+    width: 100%;
+    margin: 0;
+    font-size: 12px;
+    padding: 8px 4px;
+}
+
+/* --- POST-IT MARGINAL --- */
+.postit-objeto {
+    width: 160px;
+    height: 160px;
+    padding: 15px;
+    box-sizing: border-box;
+    background: #feff9c;
+    /* Amarelo clássico */
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.2), inset 0 -15px 15px rgba(0, 0, 0, 0.03);
+    border-bottom-right-radius: 20px 5px;
+    /* Efeito de ponta dobrada */
+}
+
+.postit-texto {
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: #333;
+    line-height: 1.2;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+body.dark-mode .postit-objeto {
+    filter: brightness(0.9);
+}
+
+/* ==========================================
+   O POTE DE PERGUNTAS (Card de Diálogo)
+   ========================================== */
+.card-pergunta {
+    position: relative;
+    display: inline-block;
+    background: #fff;
+    padding: 5%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 0 0 2px #3498db;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* MÁGICA: O card vira referência de tamanho para a fonte */
+    container-type: inline-size;
+}
+
+.card-pergunta:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.card-pergunta::before {
+    content: '💭 Puxando Assunto...';
+    font-size: 4cqw;
+    /* A fonte se adapta à largura do card */
+    font-weight: bold;
+    color: #3498db;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.pergunta-texto {
+    font-family: 'Lora', serif;
+    font-size: 7.5cqw;
+    /* A fonte do texto se adapta perfeitamente */
+    color: #333;
+    font-style: italic;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* ==========================================
+   CURSORES COMPARTILHADOS (Efeito Figma)
+   ========================================== */
+.cursor-alheio {
+    position: absolute;
+    pointer-events: none;
+    /* Para não atrapalhar seus cliques! */
+    z-index: 9999;
+    /* A mágica que faz o movimento ficar fluido, mesmo com delay da internet: */
+    transition: transform 0.1s linear;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.cursor-alheio svg {
+    width: 20px;
+    height: 20px;
+    transform: rotate(-15deg);
+    /* Posição clássica de cursor de mouse */
+}
+
+.cursor-nome {
+    background: #e91e63;
+    /* Rosa pink destacado */
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border-top-left-radius: 0;
+    margin-top: -2px;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+/* ==========================================
+   CARIMBO DE PASSAPORTE
+   ========================================== */
+.carimbo-objeto {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 6px double rgba(192, 57, 43, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: rgba(192, 57, 43, 0.85);
+    font-family: 'Courier Prime', monospace;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 10px;
+    box-sizing: border-box;
+    /* A Mágica: Simula a tinta penetrando no papel */
+    mix-blend-mode: multiply;
+    filter: drop-shadow(1px 1px 0px rgba(255, 255, 255, 0.3));
+}
+
+.carimbo-local {
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.carimbo-data {
+    font-size: 14px;
+    border-top: 1px dashed rgba(192, 57, 43, 0.5);
+    padding-top: 5px;
+}
+
+.carimbo-icone {
+    font-size: 30px;
+    opacity: 0.6;
+    margin-bottom: 5px;
+}
+
+body.dark-mode .carimbo-objeto {
+    mix-blend-mode: screen;
+    border-color: rgba(255, 120, 120, 0.8);
+    color: rgba(255, 120, 120, 0.9);
+}
+
+/* ==========================================
+   NOTIFICAÇÕES TOAST (Alertas Elegantes)
+   ========================================== */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--bg-caixas);
+    color: var(--texto-principal);
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--borda);
+    font-size: 14px;
+    font-weight: bold;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+/* Efeito para a ferramenta de desenho selecionada */
+.btn-ferramenta.ativo {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================
+   ESTILO DA PALETA DE CORES (MODO DESENHO)
+   ========================================== */
+#inputCorDesenho {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#inputCorDesenho:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+#inputCorDesenho::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#inputCorDesenho::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+/* ==========================================
+   BARRA DE DESENHO (PÍLULA) - PC E MOBILE
+   ========================================== */
+#toolbarDesenho {
+    position: fixed;
+    bottom: 30px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    /* O scale 1 aqui é o estado visível */
+    z-index: 3000;
+    padding: 10px 20px;
+    border-radius: 40px;
+    gap: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+    display: flex;
+}
+
+/* Quando escondida, ela some suavemente para baixo */
+#toolbarDesenho.escondido {
+    transform: translateX(-50%) scale(0.8);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#toolbarDesenho .divisor-toolbar {
+    height: 24px;
+}
+
+/* A ADAPTAÇÃO PARA O CELULAR (Magia de UI) */
+@media (max-width: 768px) {
+    #toolbarDesenho {
+        bottom: 85px;
+        /* Sobe a barra para não ficar em cima do menu nav-mobile! */
+        padding: 6px 12px;
+        gap: 6px;
+        width: 92%;
+        /* Impede que corte nas laterais do celular */
+        justify-content: space-between;
+        border-radius: 20px;
+    }
+
+    #toolbarDesenho .btn-ferramenta {
+        font-size: 16px;
+        /* Emojis menores */
+        padding: 4px;
+    }
+
+    #inputCorDesenho {
+        width: 24px;
+        height: 24px;
+    }
+
+    #toolbarDesenho .divisor-toolbar {
+        height: 18px;
+    }
+
+    #btnFecharDesenho {
+        font-size: 12px !important;
+        padding: 4px 6px;
+    }
+}
+
+/* Balãozinho de "Digitando..." */
+.status-digitando {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    background: #fff;
+    border-radius: 50%;
+    padding: 2px;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    animation: pulsarDigitando 1s infinite alternate;
+    z-index: 15;
+}
+
+@keyframes pulsarDigitando {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.2);
+    }
+}
+
+/* --- LIMPEZA VISUAL E BLOQUEIO DO MODO LEITURA --- */
+.modo-leitura-ativo .drag-handle {
+    display: none !important;
+    /* Some com as alças de arrasto */
+}
+
+/* Trava todos os sub-textos editáveis para não abrirem o teclado */
+.modo-leitura-ativo .polaroid-legenda,
+.modo-leitura-ativo .ingresso-texto,
+.modo-leitura-ativo .fita-titulo,
+.modo-leitura-ativo .carta-papel,
+.modo-leitura-ativo .postit-texto {
+    pointer-events: none !important;
+    user-select: text !important;
+    /* Permite apenas selecionar para copiar, mas não editar */
+}
+
+/* Impede o hover e cliques nos objetos, tirando a mãozinha */
+.modo-leitura-ativo .obj-flutuante,
+.modo-leitura-ativo .sticker,
+.modo-leitura-ativo .polaroid,
+.modo-leitura-ativo .fita-cassete {
+    cursor: default !important;
+}
+
+/* Exceção vital: O selo da carta e a raspadinha AINDA precisam receber cliques! */
+.modo-leitura-ativo .selo-cera,
+.modo-leitura-ativo .raspadinha-canvas {
+    pointer-events: auto !important;
 }
