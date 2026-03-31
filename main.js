@@ -918,26 +918,49 @@ function salvarTextoFirebase() {
 
 let timerSalvarTexto;
 let timerDigitando;
+let euEstouDigitando = false; // NOVO: Controla se você está escrevendo neste exato segundo
 
 caixaDeTexto.addEventListener('input', () => {
     if (cadernoAtualId && minhaPermissaoAtual !== 'leitor') {
+        euEstouDigitando = true; // Trava a tela para não receber atualizações do amigo e apagar seu texto
+
         clearTimeout(timerSalvarTexto);
         clearTimeout(timerDigitando);
 
-        // 1. Avisa o Firebase que o usuário está digitando AGORA
-        if (refMinhaPresenca) {
-            update(refMinhaPresenca, { digitando: true });
-        }
+        if (refMinhaPresenca) update(refMinhaPresenca, { digitando: true });
 
-        // 2. Espera 800ms sem digitar para salvar o texto no Firebase
         timerSalvarTexto = setTimeout(() => {
             salvarTextoFirebase();
+            euEstouDigitando = false; // Libera a tela após salvar no banco
         }, 800);
 
-        // 3. Espera 1.5s sem digitar para remover o status de "Digitando..."
         timerDigitando = setTimeout(() => {
             if (refMinhaPresenca) update(refMinhaPresenca, { digitando: false });
         }, 1500);
+    }
+});
+
+// ==========================================
+// CORREÇÃO: FORÇAR CURSOR NO FUNDO VAZIO
+// ==========================================
+caixaDeTexto.addEventListener('click', (e) => {
+    if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
+
+    // Se clicou no fundo pontilhado da folha (e não numa foto/ingresso)
+    if (e.target === caixaDeTexto) {
+        // Garante que exista um espaço para o texto nascer
+        if (!caixaDeTexto.lastChild || caixaDeTexto.lastChild.nodeName !== 'BR') {
+            caixaDeTexto.appendChild(document.createElement('br'));
+        }
+
+        // Mágica para forçar o navegador a jogar o cursor piscante no final da folha
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(caixaDeTexto);
+        range.collapse(false); // false = final do conteúdo
+        sel.removeAllRanges();
+        sel.addRange(range);
+        caixaDeTexto.focus();
     }
 });
 
@@ -1853,6 +1876,7 @@ function carregarPaginaAtual() {
         const d = snapshot.val() || {};
         notificarNovoConteudo("A página foi atualizada!");
         const camadaCapsula = document.getElementById('camadaCapsula');
+
         if (d.bloqueadoAte && d.bloqueadoAte > Date.now()) {
             caixaDeTexto.innerHTML = ''; caixaDeTexto.contentEditable = false;
             if (camadaCapsula) {
@@ -1861,14 +1885,16 @@ function carregarPaginaAtual() {
             }
         } else {
             if (camadaCapsula) camadaCapsula.classList.add('escondido');
-            // Só devolve a edição se não estivermos no Modo Leitura!
-            if (minhaPermissaoAtual !== 'leitor' && !modoLeituraAtivo) {
-                caixaDeTexto.contentEditable = true;
-            } else {
-                caixaDeTexto.contentEditable = false;
+
+            // Impede o navegador de bugar o cursor mudando a propriedade sem necessidade
+            const estadoDesejado = (minhaPermissaoAtual !== 'leitor' && !modoLeituraAtivo) ? "true" : "false";
+            if (caixaDeTexto.contentEditable !== estadoDesejado) {
+                caixaDeTexto.contentEditable = estadoDesejado;
             }
-            if (d.texto && document.activeElement !== caixaDeTexto && caixaDeTexto.innerHTML !== d.texto) caixaDeTexto.innerHTML = d.texto;
-            else if (!d.texto && document.activeElement !== caixaDeTexto) caixaDeTexto.innerHTML = '';
+            // Se você estiver só olhando a página, você recebe o texto do seu amigo na hora!
+            if (!euEstouDigitando && caixaDeTexto.innerHTML !== (d.texto || '')) {
+                caixaDeTexto.innerHTML = d.texto || '';
+            }
         }
     });
 
