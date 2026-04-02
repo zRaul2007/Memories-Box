@@ -26,7 +26,7 @@ let usuariosDb = {};
 onValue(ref(database, 'usuarios'), (snapshot) => { usuariosDb = snapshot.val() || {}; });
 let camadaGlobalZIndex = 50;
 let tarefaSendoEditadaId = null; let tarefaSendoApagadaId = null;
-let escutaAnotacoes, escutaTarefas, escutaStickers, escutaDesenhos, escutaTotalPaginas, escutaPresenca, escutaAmei;
+let escutaAnotacoes, escutaTarefas, escutaStickers, escutaDesenhos, escutaTotalPaginas, escutaPresenca, escutaAmei, escutaConfigCaderno;
 let refMinhaPresenca = null;
 let modoLeituraAtivo = false; // Controle estilo Obsidian para evitar toques acidentais no mobile durante a leitura
 
@@ -113,6 +113,40 @@ window.salvarTextoFirebase = function () {
     meuUltimoUpdate = Date.now();
     salvarTextoFirebaseBase();
 };
+
+// ==========================================
+// COMPRESSOR DE IMAGENS (Usado no Upload de Fotos de Perfil e Imagens nas Páginas)
+// ==========================================
+function comprimirImagemCanvas(file, maxLargura = 800, qualidade = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Mantém a proporção da imagem
+                if (width > maxLargura) {
+                    height = Math.round((height * maxLargura) / width);
+                    width = maxLargura;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Força a conversão para JPEG (muito mais leve que PNG) com qualidade reduzida
+                resolve(canvas.toDataURL('image/jpeg', qualidade));
+            };
+            img.onerror = (err) => reject(err);
+        };
+    });
+}
 
 // ==========================================
 // EFEITOS SONOROS (Motor de UX de Áudio)
@@ -383,12 +417,21 @@ function carregarCadernos() {
 document.getElementById('btnVoltarDash')?.addEventListener('click', () => {
     telaApp.classList.add('escondido'); telaDashboard.classList.remove('escondido');
     if (refMinhaPresenca) remove(refMinhaPresenca);
-    if (escutaAnotacoes) escutaAnotacoes(); if (escutaTarefas) escutaTarefas(); if (escutaStickers) escutaStickers();
-    if (escutaDesenhos) escutaDesenhos(); if (escutaTotalPaginas) escutaTotalPaginas();
-    if (escutaPresenca) escutaPresenca(); if (escutaAmei) escutaAmei();
+    if (escutaAnotacoes) escutaAnotacoes();
+    if (escutaTarefas) escutaTarefas();
+    if (escutaStickers) escutaStickers();
+    if (escutaDesenhos) escutaDesenhos();
+    if (escutaTotalPaginas) escutaTotalPaginas();
+    if (escutaPresenca) escutaPresenca();
+    if (escutaAmei) escutaAmei();
+    if (escutaConfigCaderno) escutaConfigCaderno();
 
     cadernoAtualId = null;
-    document.getElementById('containerMusica').classList.add('escondido'); document.getElementById('widgetMusica').innerHTML = '';
+    document.getElementById('containerMusica').classList.add('escondido');
+    document.getElementById('widgetMusica').innerHTML = '';
+
+    // Limpeza de cache visual de garantia
+    if (folhaA4Wrapper) folhaA4Wrapper.className = 'folha-a4 fonte-padrao fundo-limpo';
 });
 
 // --- SUBSTITUA A FUNÇÃO abrirCaderno INTEIRA NO main.js ---
@@ -803,7 +846,7 @@ addEventoOcultarTeclado('btnObjApagar', () => { if (imagemSelecionada) { imagemS
 // LÓGICA DE EDIÇÃO (MODAIS E CINEMÁTICA)
 // ==========================================
 
-// Fecha a Toolbar ao clicar no Lápis e abre o Modal
+// Fecha a Toolbar ao clicar no Lápis e abre o Modal / Destranca Edição
 addEventoOcultarTeclado('btnObjEditar', () => {
     if (!imagemSelecionada) return;
 
@@ -814,7 +857,7 @@ addEventoOcultarTeclado('btnObjEditar', () => {
         document.getElementById('inputTextoCarta').value = papel.innerText || '';
         document.getElementById('modalEditarCarta').classList.remove('escondido');
     }
-    else if (imagemSelecionada.classList.contains('raspadinha-objeto')) {
+    else if (imagemSelecionada.classList.contains('raspadinha-objeto') || imagemSelecionada.querySelector('.raspadinha-canvas')) {
         const textoDiv = imagemSelecionada.querySelector('.raspadinha-texto');
         document.getElementById('inputTextoRaspadinha').value = textoDiv.innerText || '';
         document.getElementById('modalEditarRaspadinha').classList.remove('escondido');
@@ -826,21 +869,27 @@ addEventoOcultarTeclado('btnObjEditar', () => {
         document.getElementById('inputTextoPostit').value = tempDiv.innerText || '';
         document.getElementById('modalEditarPostit').classList.remove('escondido');
     }
-});
+    //  Destranca os textos pra você editar direto na folha
+    else if (imagemSelecionada.querySelector('.ingresso-texto')) {
+        const textos = imagemSelecionada.querySelectorAll('.ingresso-texto');
+        textos.forEach(t => t.contentEditable = "true"); // Libera a digitação
+        textos[0].focus();
 
-// Salvar Edição da Carta
-document.getElementById('btnSalvarEdicaoCarta')?.addEventListener('click', () => {
-    if (imagemSelecionada && imagemSelecionada.classList.contains('carta-objeto')) {
-        const novoTexto = document.getElementById('inputTextoCarta').value;
-        imagemSelecionada.querySelector('.carta-papel').innerHTML = novoTexto.replace(/\n/g, '<br>');
-        salvarTextoFirebase();
-        document.getElementById('modalEditarCarta').classList.add('escondido');
+        // Joga o cursor piscante pro final
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(textos[0]);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        if (window.mostrarToast) window.mostrarToast("Campos destravados! Clique fora para salvar.", "✏️");
     }
 });
 
 // Salvar Edição da Raspadinha (Renova a tinta)
 document.getElementById('btnSalvarEdicaoRaspadinha')?.addEventListener('click', () => {
-    if (imagemSelecionada && imagemSelecionada.classList.contains('raspadinha-objeto')) {
+    if (imagemSelecionada && (imagemSelecionada.classList.contains('raspadinha-container') || imagemSelecionada.querySelector('.raspadinha-canvas'))) {
         imagemSelecionada.querySelector('.raspadinha-texto').innerText = document.getElementById('inputTextoRaspadinha').value;
         imagemSelecionada.querySelector('.raspadinha-estado').src = "";
         imagemSelecionada.querySelector('.raspadinha-canvas').dataset.iniciado = "false";
@@ -920,9 +969,17 @@ let timerSalvarTexto;
 let timerDigitando;
 let euEstouDigitando = false; // NOVO: Controla se você está escrevendo neste exato segundo
 
-caixaDeTexto.addEventListener('input', () => {
+caixaDeTexto.addEventListener('input', (e) => {
+    // TRAVA DO RODAPÉ DA PÁGINA 
+    // Ignora o bloqueio se o usuário estiver apagando texto ou no meio de um arrasto nativo
+    if (!window.arrastandoNativo && e.inputType !== 'deleteContentBackward' && caixaDeTexto.scrollHeight > caixaDeTexto.clientHeight) {
+        document.execCommand('undo'); // Desfaz a digitação na hora!
+        if (window.mostrarToast) window.mostrarToast("Fim da folha! Crie uma nova página.", "⚠️");
+        return; // Aborta o salvamento
+    }
+
     if (cadernoAtualId && minhaPermissaoAtual !== 'leitor') {
-        euEstouDigitando = true; // Trava a tela para não receber atualizações do amigo e apagar seu texto
+        euEstouDigitando = true;
 
         clearTimeout(timerSalvarTexto);
         clearTimeout(timerDigitando);
@@ -931,7 +988,7 @@ caixaDeTexto.addEventListener('input', () => {
 
         timerSalvarTexto = setTimeout(() => {
             salvarTextoFirebase();
-            euEstouDigitando = false; // Libera a tela após salvar no banco
+            euEstouDigitando = false;
         }, 800);
 
         timerDigitando = setTimeout(() => {
@@ -941,15 +998,54 @@ caixaDeTexto.addEventListener('input', () => {
 });
 
 // ==========================================
-// CORREÇÃO: FORÇAR CURSOR NO FUNDO VAZIO (Versão Suave)
+// DESELEÇÃO INTELIGENTE, CARTA E CURSOR
 // ==========================================
 caixaDeTexto.addEventListener('click', (e) => {
-    if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
+    if (minhaPermissaoAtual === 'leitor' || (typeof modoLeituraAtivo !== 'undefined' && modoLeituraAtivo)) return;
 
-    // Se clicou no fundo pontilhado da folha
+    // --- 1. ESCONDER AS BARRAS (Global Deselect) ---
+    if (!e.target.classList.contains('sticker')) {
+        document.getElementById('toolbarSticker')?.classList.add('escondido');
+        if (typeof stickerSelecionado !== 'undefined') stickerSelecionado = null;
+    }
+
+    if (!e.target.closest('.obj-flutuante') &&
+        !e.target.closest('.polaroid-img') &&
+        !e.target.closest('.polaroid') &&
+        !e.target.closest('.drag-handle') &&
+        !e.target.closest('.fita-cassete') &&
+        !e.target.closest('.card-pergunta')) {
+
+        document.getElementById('toolbarObjeto')?.classList.add('escondido');
+        document.getElementById('toolbarImagem')?.classList.add('escondido');
+    }
+
+    // --- 2. CAPTURA DO SELO DA CARTA ---
+    if (e.target.classList.contains('selo-cera')) {
+        const cartaContainer = e.target.closest('.carta-container');
+        if (cartaContainer) window.animarElerCarta(cartaContainer.id);
+        return; // Interrompe para não roubar o cursor
+    }
+
+    // --- 3. CLIQUE NO LAPISINHO DO INGRESSO ---
+    if (e.target.classList.contains('btn-editar-ingresso')) {
+        const ingresso = e.target.closest('.obj-flutuante');
+        const texto = ingresso.querySelector('.ingresso-texto');
+        if (texto) {
+            texto.focus();
+            // Joga o cursor piscante magicamente para o final da frase!
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(texto);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        return; // Interrompe para não roubar o foco
+    }
+
+    // --- 4. FORÇAR CURSOR NO FUNDO VAZIO ---
     if (e.target === caixaDeTexto) {
-        // Em vez de roubar o cursor, só criamos um espaço seguro no final
-        // APENAS SE o último item da folha for uma foto ou objeto (que bloqueiam o clique nativo)
         const ultimoFilho = caixaDeTexto.lastElementChild;
         if (ultimoFilho && ultimoFilho.contentEditable === "false") {
             caixaDeTexto.appendChild(document.createElement('br'));
@@ -957,41 +1053,33 @@ caixaDeTexto.addEventListener('click', (e) => {
         }
     }
 });
+document.getElementById('inputFoto')?.addEventListener('change', async (e) => {
+    if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-document.getElementById('inputFoto')?.addEventListener('change', (e) => {
-    if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return; const arquivo = e.target.files[0]; if (!arquivo) return;
-    const leitor = new FileReader();
-    leitor.onload = function (evt) {
-        const img = new Image();
-        img.onload = function () {
-            dispararSom('camera');
-            const cvs = document.createElement('canvas'); cvs.width = 400; cvs.height = img.height * (400 / img.width);
-            cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height);
+    if (window.mostrarToast) window.mostrarToast("Processando e comprimindo foto...", "⏳");
 
-            const polaroidHTML = `
-                <div class="polaroid" contenteditable="false" draggable="false" style="max-width: 45%; float: none; display: block; margin: 15px auto;">
-                    <img src="${cvs.toDataURL('image/jpeg', 0.8)}" class="polaroid-img" draggable="false">
-                    <div class="polaroid-legenda" contenteditable="true" spellcheck="false">Escreva aqui...</div>
-                </div><br>
-            `;
-            caixaDeTexto.insertAdjacentHTML('beforeend', polaroidHTML);
-            // --- Blindagem contra Drag & Drop nativo no editor ---
-            if (e.target.tagName === 'IMG' || e.target.closest?.('.polaroid') || e.target.closest?.('.fita-cassete') || e.target.closest?.('.ingresso-card')) {
-                e.preventDefault();
-            }
+    try {
+        // Usa a nossa nova máquina de compressão!
+        const base64Comprimido = await comprimirImagemCanvas(file, 800, 0.7);
 
-            caixaDeTexto.addEventListener('drop', (e) => {
-                // Se por acaso o usuário conseguir arrastar e soltar algo solto, impedimos a injeção de HTML sujo
-                if (e.dataTransfer?.files?.length > 0 || e.dataTransfer?.getData('text/html')?.includes('<img')) {
-                    e.preventDefault();
-                }
-            });
-            if (e.target.tagName === 'IMG' || e.target.closest?.('.polaroid') || e.target.closest?.('.fita-cassete') || e.target.closest?.('.ingresso-card') || e.target.closest?.('.card-pergunta')) {
-                e.preventDefault();
-            }
-            salvarTextoFirebase(); document.getElementById('inputFoto').value = '';
-        }; img.src = evt.target.result;
-    }; leitor.readAsDataURL(arquivo);
+        // Gera a Polaroid com a imagem levinha
+        const polaroidHTML = `
+            <div class="polaroid" contenteditable="false" draggable="true" style="float: left; margin: 10px 15px 10px 0;">
+                <img src="${base64Comprimido}" class="polaroid-img" contenteditable="false" draggable="true">
+                <div class="polaroid-legenda" contenteditable="true" spellcheck="false" title="Clique para escrever...">Escreva uma legenda...</div>
+            </div>&nbsp;
+        `;
+        caixaDeTexto.insertAdjacentHTML('beforeend', polaroidHTML);
+        salvarTextoFirebase();
+
+        if (window.mostrarToast) window.mostrarToast("Foto colada com sucesso!", "📸");
+    } catch (erro) {
+        console.error("Erro ao comprimir imagem:", erro);
+        alert("Ops! Tivemos um problema ao processar essa imagem.");
+    }
+    e.target.value = ''; // Limpa o input
 });
 
 // --- GERADOR DO POST-IT ---
@@ -999,7 +1087,6 @@ document.getElementById('btnInserirPostit')?.addEventListener('click', () => {
     if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return;
     const postitHTML = `
         <div class="obj-flutuante postit-objeto" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 150px; left: 80px; width: 160px;">
-            <div class="drag-handle" title="Arraste para mover" contenteditable="false">✥ Mover</div>
             <div class="postit-texto">Lembrete rápido...</div>
         </div>
     `;
@@ -1056,11 +1143,10 @@ document.getElementById('btnPuxarAssunto')?.addEventListener('click', () => {
 
     const perguntaSorteada = bancoDePerguntas[Math.floor(Math.random() * bancoDePerguntas.length)];
 
-    // Agora nasce como um bloco fluído igual a Polaroid
     const cardHTML = `
-        <div class="card-pergunta" contenteditable="false" draggable="false" style="width: 320px; max-width: 90%; float: none; display: block; margin: 15px auto;">
+        <div class="card-pergunta" contenteditable="false" draggable="true" style="width: 100%; max-width: 45%; float: left; margin: 10px 15px 10px 0;">
             <div class="pergunta-texto">"${perguntaSorteada}"</div>
-        </div><br>
+        </div>&nbsp;
     `;
 
     caixaDeTexto.insertAdjacentHTML('beforeend', cardHTML);
@@ -1131,7 +1217,7 @@ document.getElementById('btnGravarAudio')?.addEventListener('click', async (e) =
             leitor.onloadend = () => {
                 const base64Audio = leitor.result;
                 const fitaHTML = `
-                    <div class="fita-cassete" contenteditable="false" draggable="false" style="width: 100%; max-width: 60%; float: none; display: block; margin: 25px auto;">
+                    <div class="fita-cassete" contenteditable="false" draggable="true" style="width: 100%; max-width: 60%; float: left; margin: 10px 15px 10px 0;">
                         <svg viewBox="0 0 400 256" width="100%" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));">
                             <defs>
                                 <linearGradient id="plasticoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -1167,7 +1253,7 @@ document.getElementById('btnGravarAudio')?.addEventListener('click', async (e) =
                         </svg>
                         <div class="fita-titulo" contenteditable="true" spellcheck="false" title="Escreva o nome da fita">Escreva aqui...</div>
                         <audio class="fita-player" controls src="${base64Audio}"></audio>
-                    </div><br>
+                    </div>&nbsp;
                 `;
                 caixaDeTexto.insertAdjacentHTML('beforeend', fitaHTML);
                 salvarTextoFirebase();
@@ -1281,12 +1367,14 @@ function getPosicaoCanvas(e) {
 
 function iniciarDesenho(e) {
     if (!modoDesenhoAtivo || minhaPermissaoAtual === 'leitor' || !ctxDesenho) return;
+
+    // Se tiver mais de 1 dedo na tela, ignora o desenho para permitir o Scroll/Pan
+    if (e.touches && e.touches.length > 1) return;
+
     desenhando = true;
     const pos = getPosicaoCanvas(e);
 
     ctxDesenho.globalCompositeOperation = ferramentaAtual === 'borracha' ? 'destination-out' : 'source-over';
-
-    // Puxa a cor exata do seletor em tempo real
     const corEscolhida = document.getElementById('inputCorDesenho').value;
 
     if (ferramentaAtual === 'marcador') {
@@ -1327,7 +1415,15 @@ function aplicarSpray(x, y) {
 
 function desenhar(e) {
     if (!desenhando || !modoDesenhoAtivo || !ctxDesenho) return;
-    e.preventDefault(); // Trava a tela no mobile
+
+    // Se o usuário encostar o 2º dedo no meio do traço, solta a tela para o navegador rolar
+    if (e.touches && e.touches.length > 1) {
+        desenhando = false;
+        ctxDesenho.beginPath(); // Quebra a linha atual
+        return;
+    }
+
+    e.preventDefault(); // Trava a tela no mobile APENAS se estiver com 1 DEDO
     const pos = getPosicaoCanvas(e);
 
     if (ferramentaAtual === 'spray') {
@@ -1422,28 +1518,31 @@ let stickerArrastado = null; let offsetXSticker = 0, offsetYSticker = 0;
 
 const iniciarArrasteSticker = (e) => {
     if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
-    const alvo = e.target;
+
+    // Segurança contra clique em TextNode
+    let alvo = e.target;
+    if (alvo.nodeType === 3) alvo = alvo.parentNode;
 
     if (alvo.classList?.contains('sticker')) {
-        // Trava o scroll da tela enquanto arrasta o adesivo (Vital para Mobile UX)
         if (e.type === 'touchstart') e.preventDefault();
 
         stickerArrastado = alvo;
         stickerSelecionado = alvo;
-        const rect = stickerArrastado.getBoundingClientRect();
+        window.arrastandoSticker = true; // Trava o Firebase!
 
-        // Pega a coordenada do Mouse OU do primeiro Dedo na tela
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = stickerArrastado.getBoundingClientRect();
+        const isTouch = e.type.includes('touch');
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
         offsetXSticker = clientX - rect.left;
         offsetYSticker = clientY - rect.top;
 
-        toolbarSticker.style.top = `${rect.top - 15}px`;
-        toolbarSticker.style.left = `${rect.left + (rect.width / 2)}px`;
-        toolbarSticker.classList.remove('escondido');
+        // Esconde TODAS as toolbars para o arraste ficar limpo e sem bugs!
+        toolbarSticker.classList.add('escondido');
         toolbarFlutuante.classList.add('escondido');
         toolbarImagem.classList.add('escondido');
+        document.getElementById('toolbarObjeto')?.classList.add('escondido');
     } else {
         toolbarSticker.classList.add('escondido');
         stickerSelecionado = null;
@@ -1471,7 +1570,13 @@ const moverSticker = (e) => {
 const soltarSticker = () => {
     if (stickerArrastado && cadernoAtualId) {
         update(ref(database, `stickers/${cadernoAtualId}/pagina_${paginaAtual}/${stickerArrastado.getAttribute('data-id')}`), { x: parseInt(stickerArrastado.style.left), y: parseInt(stickerArrastado.style.top) });
+
+        // Devolve a barra do Sticker quando soltar
+        sincronizarToolbarArrasto(stickerArrastado, 'toolbarSticker');
+        toolbarSticker.classList.remove('escondido');
+
         stickerArrastado = null;
+        window.arrastandoSticker = false; // Libera o Firebase
     }
 };
 
@@ -1491,60 +1596,93 @@ addEventoOcultarTeclado('btnStickerGirarDir', () => { if (stickerSelecionado && 
 addEventoOcultarTeclado('btnStickerApagar', () => { if (stickerSelecionado && cadernoAtualId) { remove(ref(database, `stickers/${cadernoAtualId}/pagina_${paginaAtual}/${stickerSelecionado.getAttribute('data-id')}`)); toolbarSticker.classList.add('escondido'); stickerSelecionado = null; } });
 
 // ==========================================
-// MOTOR DE ARRASTO PARA OBJETOS FLUTUANTES (INGRESSO)
+// MOTOR DE ARRASTO BLINDADO PARA OBJETOS FLUTUANTES
 // ==========================================
 let objetoFlutuanteArrastado = null;
 let offsetObjX = 0, offsetObjY = 0;
+let rafArrastoObjetoAtivo = false;
 
 const iniciarArrasteObjetoFlutuante = (e) => {
-    if (minhaPermissaoAtual === 'leitor' || modoLeituraAtivo) return;
+    if (minhaPermissaoAtual === 'leitor' || (typeof modoLeituraAtivo !== 'undefined' && modoLeituraAtivo)) return;
 
-    const handle = e.target.closest('.drag-handle');
-    if (handle) {
-        e.preventDefault();
-        objetoFlutuanteArrastado = handle.closest('.obj-flutuante');
+    let target = e.target;
+    if (target.nodeType === 3) target = target.parentNode;
 
-        //Traz o objeto para a frente de todos os outros enquanto arrasta, para evitar que ele se perca atrás de outros elementos
-        camadaGlobalZIndex++;
-        objetoFlutuanteArrastado.style.zIndex = camadaGlobalZIndex;
+    const obj = target.closest('.obj-flutuante');
+    if (!obj) return;
+    // Se você clicar/tocar direto no cinza (canvas), ele raspa e não arrasta.
+    // Se clicar na bordinha branca do container, ele ARRASTA!
+    if (target.classList.contains('raspadinha-canvas')) {
+        return; // Aborta o arrasto e deixa o usuário raspar a tinta
+    }
 
-        const rect = objetoFlutuanteArrastado.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // Regras de bloqueio de arrasto para outros botões
+    if (!target.classList.contains('selo-cera') &&
+        !target.closest('.ingresso-texto') &&
+        !target.closest('.btn-editar-ingresso')) {
 
-        offsetObjX = clientX - rect.left;
-        offsetObjY = clientY - rect.top;
+        if (e.type === 'touchstart') e.preventDefault();
 
-        toolbarFlutuante.classList.add('escondido');
+        objetoFlutuanteArrastado = obj;
+
+        if (typeof camadaGlobalZIndex !== 'undefined') {
+            camadaGlobalZIndex++;
+            objetoFlutuanteArrastado.style.zIndex = camadaGlobalZIndex;
+        }
+
+        const isTouch = e.type.includes('touch');
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+        const containerRect = caixaDeTexto.getBoundingClientRect();
+        const objAtualX = parseFloat(objetoFlutuanteArrastado.style.left) || 0;
+        const objAtualY = parseFloat(objetoFlutuanteArrastado.style.top) || 0;
+
+        const mouseContainerX = clientX - containerRect.left + caixaDeTexto.scrollLeft;
+        const mouseContainerY = clientY - containerRect.top + caixaDeTexto.scrollTop;
+
+        offsetObjX = mouseContainerX - objAtualX;
+        offsetObjY = mouseContainerY - objAtualY;
+
+        document.getElementById('toolbarFlutuante')?.classList.add('escondido');
+        document.getElementById('toolbarImagem')?.classList.add('escondido');
+        document.getElementById('toolbarSticker')?.classList.add('escondido');
+        document.getElementById('toolbarObjeto')?.classList.add('escondido');
+
+        window.arrastandoObjetoPesado = true;
     }
 };
 
-let rafArrastoObjetoAtivo = false;
-
 const moverObjetoFlutuante = (e) => {
     if (objetoFlutuanteArrastado) {
-        if (e.type === 'touchmove') e.preventDefault();
+        if (e.type.includes('touch')) e.preventDefault();
 
         if (!rafArrastoObjetoAtivo) {
-            // Otimização de Performance: Navegador controla os quadros (60fps)
             requestAnimationFrame(() => {
-                const containerRect = caixaDeTexto.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                try {
+                    const containerRect = caixaDeTexto.getBoundingClientRect();
+                    const isTouch = e.type.includes('touch');
 
-                let x = clientX - containerRect.left - offsetObjX;
-                let y = clientY - containerRect.top - offsetObjY;
+                    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+                    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
-                if (x < 0) x = 0;
-                if (y < 0) y = 0;
+                    let x = clientX - containerRect.left + caixaDeTexto.scrollLeft - offsetObjX;
+                    let y = clientY - containerRect.top + caixaDeTexto.scrollTop - offsetObjY;
 
-                objetoFlutuanteArrastado.style.left = `${x}px`;
-                objetoFlutuanteArrastado.style.top = `${y}px`;
+                    // Impede o objeto de ultrapassar as bordas esquerda e direita!
+                    if (x < 0) x = 0;
+                    if (y < 0) y = 0;
 
-                document.getElementById('toolbarObjeto')?.classList.remove('escondido');
-                sincronizarToolbarArrasto(objetoFlutuanteArrastado, 'toolbarObjeto');
+                    const larguraMax = containerRect.width - objetoFlutuanteArrastado.offsetWidth;
+                    if (x > larguraMax) x = larguraMax; // Bateu na parede direita, não passa!
 
-                rafArrastoObjetoAtivo = false;
+                    objetoFlutuanteArrastado.style.left = `${x}px`;
+                    objetoFlutuanteArrastado.style.top = `${y}px`;
+                } catch (err) {
+                    console.warn("Recuperando quadro perdido...", err);
+                } finally {
+                    rafArrastoObjetoAtivo = false;
+                }
             });
             rafArrastoObjetoAtivo = true;
         }
@@ -1553,12 +1691,20 @@ const moverObjetoFlutuante = (e) => {
 
 const soltarObjetoFlutuante = () => {
     if (objetoFlutuanteArrastado) {
+        // Ao soltar, a barra de edição volta perfeitamente colada ao objeto!
+        const tbObj = document.getElementById('toolbarObjeto');
+        if (tbObj) {
+            sincronizarToolbarArrasto(objetoFlutuanteArrastado, 'toolbarObjeto');
+            tbObj.classList.remove('escondido');
+        }
+
         objetoFlutuanteArrastado = null;
-        salvarTextoFirebase(); // Salva as novas coordenadas no Banco de Dados instantaneamente!
+        window.arrastandoObjetoPesado = false;
+        salvarTextoFirebase();
     }
 };
 
-// Conecta os eventos de arrasto na Caixa de Texto (para abranger toda a folha)
+// Listeners
 caixaDeTexto.addEventListener('mousedown', iniciarArrasteObjetoFlutuante);
 caixaDeTexto.addEventListener('touchstart', iniciarArrasteObjetoFlutuante, { passive: false });
 document.addEventListener('mousemove', moverObjetoFlutuante);
@@ -1569,11 +1715,11 @@ document.addEventListener('touchend', soltarObjetoFlutuante);
 // --- GERADOR DO INGRESSO ---
 document.getElementById('btnInserirIngresso')?.addEventListener('click', () => {
     if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return;
+    const rotacaoSorteada = Math.floor(Math.random() * 20) - 10;
 
-    // CORREÇÃO: Agora o HTML nasce com as classes 'obj-flutuante' e 'drag-handle'!
+    // Removemos o lapisinho flutuante e travamos todos os contenteditable para "false" inicialmente
     const ingressoHTML = `
-        <div class="obj-flutuante ingresso-card" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 150px; left: 50px; width: 280px;">
-            <div class="drag-handle" title="Arraste para mover" contenteditable="false">✥ Mover</div>
+        <div class="obj-flutuante" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 200px; left: 100px; width: 300px; --rot: ${rotacaoSorteada}deg;">
             
             <svg viewBox="0 0 300 120" width="100%" xmlns="http://www.w3.org/2000/svg" style="display: block;">
                 <path d="M 10 10 L 290 10 A 10 10 0 0 0 290 30 L 290 90 A 10 10 0 0 0 290 110 L 10 110 A 10 10 0 0 0 10 90 L 10 30 A 10 10 0 0 0 10 10 Z" fill="#fdfbf7" stroke="#dcd0c0" stroke-width="2"/>
@@ -1586,9 +1732,9 @@ document.getElementById('btnInserirIngresso')?.addEventListener('click', () => {
                 <text x="28" y="98" font-family="monospace" font-size="10" fill="#aaa" transform="rotate(-90 28 98)">ADMIT ONE</text>
             </svg>
             
-            <div class="ingresso-texto ingresso-evento" contenteditable="true" spellcheck="false" title="Nome do evento">Cine Drive-in</div>
-            <div class="ingresso-texto ingresso-data" contenteditable="true" spellcheck="false" title="Data/Hora">14/05/2026</div>
-            <div class="ingresso-texto ingresso-assento" contenteditable="true" spellcheck="false" title="Lugar">Carro 03</div>
+            <div class="ingresso-texto ingresso-evento" contenteditable="false" spellcheck="false" title="Nome do evento">Cine Drive-in</div>
+            <div class="ingresso-texto ingresso-data" contenteditable="false" spellcheck="false" title="Data/Hora">14/05/2026</div>
+            <div class="ingresso-texto ingresso-assento" contenteditable="false" spellcheck="false" title="Lugar">Carro 03</div>
         </div>
     `;
 
@@ -1603,7 +1749,6 @@ document.getElementById('btnInserirCarta')?.addEventListener('click', () => {
 
     const cartaHTML = `
         <div class="obj-flutuante carta-objeto" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 150px; left: 80px; width: 250px;">
-            <div class="drag-handle" title="Arraste para mover">✥ Mover</div>
             <div class="carta-container" id="${idUnico}">
                 <div class="envelope-costas"></div>
                 
@@ -1630,19 +1775,20 @@ document.getElementById('btnInserirCarta')?.addEventListener('click', () => {
 // --- GERADOR DA RASPADINHA ---
 document.getElementById('btnInserirRaspadinha')?.addEventListener('click', () => {
     if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return;
+    const rotacaoSorteada = Math.floor(Math.random() * 20) - 10;
 
-    const raspHTML = `
-        <div class="obj-flutuante raspadinha-objeto" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 150px; left: 80px; width: 260px;">
-            <div class="drag-handle" title="Arraste para mover">✥ Mover</div>
-            <div class="raspadinha-container">
-                <div class="raspadinha-texto">Surpresa Oculta!</div>
-                <canvas class="raspadinha-canvas"></canvas>
-                <img class="raspadinha-estado escondido" src=""> 
-            </div>
+    // Geramos a raspadinha sem o botão "✥ Mover"
+    const raspadinhaHTML = `
+        <div class="obj-flutuante raspadinha-container" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 200px; left: 100px; width: 250px; --rot: ${rotacaoSorteada}deg;">
+            <div class="raspadinha-texto">Surpresa Oculta!</div>
+            <canvas class="raspadinha-canvas"></canvas>
+            <img class="raspadinha-estado escondido" src=""> 
         </div>
     `;
-    caixaDeTexto.insertAdjacentHTML('beforeend', raspHTML);
-    salvarTextoFirebase(); document.getElementById('menuStickers').classList.add('escondido');
+
+    caixaDeTexto.insertAdjacentHTML('beforeend', raspadinhaHTML);
+    salvarTextoFirebase();
+    document.getElementById('menuStickers').classList.add('escondido');
     inicializarRaspadinhas();
 });
 // O Motor que faz a Raspadinha funcionar na tela e salvar no banco
@@ -1880,13 +2026,11 @@ function carregarPaginaAtual() {
         } else {
             if (camadaCapsula) camadaCapsula.classList.add('escondido');
 
-            // Impede o navegador de bugar o cursor mudando a propriedade sem necessidade
             const estadoDesejado = (minhaPermissaoAtual !== 'leitor' && !modoLeituraAtivo) ? "true" : "false";
             if (caixaDeTexto.contentEditable !== estadoDesejado) {
                 caixaDeTexto.contentEditable = estadoDesejado;
             }
-            // Se você estiver só olhando a página, você recebe o texto do seu amigo na hora!
-            if (!euEstouDigitando && caixaDeTexto.innerHTML !== (d.texto || '')) {
+            if (!euEstouDigitando && !window.arrastandoObjetoPesado && !window.arrastandoSticker && caixaDeTexto.innerHTML !== (d.texto || '')) {
                 caixaDeTexto.innerHTML = d.texto || '';
             }
         }
@@ -2072,12 +2216,13 @@ function iniciarRotinasDoCaderno() {
         if (snapshot.exists()) { totalPaginas = snapshot.val(); atualizarBotoesPaginacao(); }
     });
 
-    onValue(ref(database, `cadernos/${cadernoAtualId}`), (snapshot) => {
+    escutaConfigCaderno = onValue(ref(database, `cadernos/${cadernoAtualId}`), (snapshot) => {
         const d = snapshot.val();
         if (d) {
             document.getElementById('tituloCadernoAtual').innerText = d.titulo;
             const config = d.config || {};
             if (folhaA4Wrapper) {
+                // Remove qualquer classe antiga presa no cache e aplica as novas
                 folhaA4Wrapper.className = `folha-a4 ${config.fonte || 'fonte-padrao'} ${config.fundo || 'fundo-limpo'}`;
             }
             document.getElementById('tituloCadernoAtual').className = config.fonte || 'fonte-padrao';
@@ -2149,6 +2294,34 @@ function iniciarRotinasDoCaderno() {
 
     folhaA4Wrapper?.addEventListener('mouseleave', () => {
         if (refMinhaPresenca) update(refMinhaPresenca, { cursorX: null, cursorY: null });
+    });
+
+    // ==========================================
+    // DETECTOR DE QUEDA DE INTERNET
+    // ==========================================
+    const statusConexaoRef = ref(database, '.info/connected');
+    onValue(statusConexaoRef, (snap) => {
+        let badge = document.getElementById('badgeConexao');
+
+        // Se o badge não existir no HTML, nós o criamos via JS
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'badgeConexao';
+            badge.className = 'escondido';
+            badge.style.cssText = "position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #f44336; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 99999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: opacity 0.3s;";
+            document.body.appendChild(badge);
+        }
+
+        if (snap.val() === true) {
+            // Conectado! Esconde o aviso e garante que o modo de edição funcione
+            badge.classList.add('escondido');
+            badge.style.opacity = '0';
+        } else {
+            // Offline! Mostra o aviso e, se quiser ser muito seguro, pode bloquear a edição aqui
+            badge.innerText = '⚠️ Você está offline. Não feche a página!';
+            badge.classList.remove('escondido');
+            badge.style.opacity = '1';
+        }
     });
 }
 
@@ -2498,8 +2671,7 @@ document.getElementById('btnGerarCarimbo')?.addEventListener('click', () => {
     const rotacaoSorteada = Math.floor(Math.random() * 40) - 20; // Entre -20deg e +20deg
 
     const carimboHTML = `
-        <div class="obj-flutuante" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 200px; left: 100px; width: 180px; --rot: ${rotacaoSorteada}deg;">
-            <div class="drag-handle" title="Arraste para mover" contenteditable="false">✥ Mover</div>
+        <div class="obj-flutuante" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 200px; left: 100px; width: 180px; container-type: inline-size; --rot: ${rotacaoSorteada}deg;">
             <div class="carimbo-objeto">
                 <div class="carimbo-icone">✈️</div>
                 <div class="carimbo-local">${local}</div>
@@ -2507,7 +2679,6 @@ document.getElementById('btnGerarCarimbo')?.addEventListener('click', () => {
             </div>
         </div>
     `;
-
     caixaDeTexto.insertAdjacentHTML('beforeend', carimboHTML);
     salvarTextoFirebase();
     document.getElementById('modalCarimboPassaporte').classList.add('escondido');
@@ -2648,4 +2819,87 @@ document.getElementById('btnDesbloquearInatividade')?.addEventListener('click', 
     } else {
         document.getElementById('msgErroDesbloqueio').innerText = '❌ Senha incorreta! Tente novamente.';
     }
+});
+
+// Trava o Ingresso de volta quando você clica fora ou perde o foco
+document.addEventListener('focusout', (e) => {
+    if (e.target.classList.contains('ingresso-texto')) {
+        e.target.contentEditable = "false";
+        if (typeof salvarTextoFirebase === 'function') salvarTextoFirebase();
+    }
+});
+
+// ==========================================
+// MOTOR DE ARRASTO NATIVO BLINDADO (Sem Duplicação)
+// ==========================================
+let nodeArrastadoNativo = null;
+
+// 1. O clique inicial (Pegar o item)
+caixaDeTexto.addEventListener('dragstart', (e) => {
+    if (minhaPermissaoAtual === 'leitor' || (typeof modoLeituraAtivo !== 'undefined' && modoLeituraAtivo)) {
+        e.preventDefault(); return;
+    }
+
+    const alvo = e.target.closest('.polaroid, .fita-cassete, .card-pergunta');
+    if (alvo && alvo.getAttribute('draggable') === 'true') {
+        window.arrastandoNativo = true;
+        nodeArrastadoNativo = alvo; // Salva na memória o item exato que você pegou
+
+        document.getElementById('toolbarImagem')?.classList.add('escondido');
+        document.getElementById('toolbarObjeto')?.classList.add('escondido');
+
+        e.dataTransfer.setData('text/plain', 'movendo');
+        e.dataTransfer.effectAllowed = 'move';
+
+        // Efeito visual transparente enquanto voa
+        setTimeout(() => alvo.style.opacity = '0.4', 0);
+    }
+});
+
+// 2. Liberar o espaço de queda
+caixaDeTexto.addEventListener('dragover', (e) => {
+    if (minhaPermissaoAtual !== 'leitor') {
+        e.preventDefault(); // Obrigatório para o navegador permitir soltar
+    }
+});
+
+// 3. A MÁGICA: Controlar a queda manualmente para não duplicar!
+caixaDeTexto.addEventListener('drop', (e) => {
+    if (!nodeArrastadoNativo) return;
+
+    e.preventDefault(); // BLOQUEIA A DUPLICAÇÃO NATIVA DO NAVEGADOR!
+
+    // Calcula exatamente onde o seu ponteiro do mouse está dentro do texto
+    let range;
+    if (document.caretRangeFromPoint) { // Chrome, Safari, Edge
+        range = document.caretRangeFromPoint(e.clientX, e.clientY);
+    } else if (e.rangeParent) { // Firefox
+        range = document.createRange();
+        range.setStart(e.rangeParent, e.rangeOffset);
+    }
+
+    // Move o NÓ REAL para a nova posição (Sem clonar HTML)
+    if (range) {
+        range.insertNode(nodeArrastadoNativo);
+    }
+
+    // Limpa a sujeira
+    nodeArrastadoNativo.style.opacity = '1';
+    nodeArrastadoNativo = null;
+
+    setTimeout(() => {
+        window.arrastandoNativo = false; // Desliga a trava da página
+        if (minhaPermissaoAtual !== 'leitor' && typeof salvarTextoFirebase === 'function') {
+            salvarTextoFirebase();
+        }
+    }, 100);
+});
+
+// 4. Segurança caso o usuário solte fora da folha
+caixaDeTexto.addEventListener('dragend', () => {
+    if (nodeArrastadoNativo) {
+        nodeArrastadoNativo.style.opacity = '1';
+        nodeArrastadoNativo = null;
+    }
+    window.arrastandoNativo = false;
 });
