@@ -472,7 +472,7 @@ body.dark-mode .caixa-convites {
     height: 100%;
     /* Preenche a folha inteira */
     max-height: 100%;
-    overflow-y: auto;
+    overflow-y: hidden !important;
     /* Se digitar muito, rola apenas o texto, sem esticar o papel */
     font-size: 16px;
     padding: 40px;
@@ -481,8 +481,14 @@ body.dark-mode .caixa-convites {
     line-height: 1.6;
     z-index: 1;
     position: relative;
-    padding-bottom: 150px;
+    padding-bottom: 40px !important;
     /* Espaço de sobra no final da página */
+    overflow-x: hidden !important;
+    /* Corta imediatamente qualquer coisa que vazar pros lados */
+    max-width: 100%;
+    /* Garante que o editor não estique o papel */
+    word-break: break-word;
+    /* Força palavras gigantes a se quebrarem */
 }
 
 .editor-rico::-webkit-scrollbar {
@@ -567,14 +573,6 @@ body.dark-mode .polaroid::before {
     width: 100%;
     border: 1px solid #eee;
     display: block;
-}
-
-.polaroid-img,
-.polaroid,
-.fita-cassete {
-    /* Proíbe o navegador de iniciar o "arrastar arquivo" nesses elementos */
-    -webkit-user-drag: none;
-    user-drag: none;
 }
 
 .polaroid-legenda {
@@ -1191,6 +1189,13 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     z-index: 15;
     transform: rotate(var(--rot, 0deg));
     transition: filter 0.2s;
+    cursor: grab;
+    /* <-- Adicione isto para a mãozinha aparecer! */
+}
+
+.obj-flutuante:active {
+    cursor: grabbing;
+    /* <-- Adicione isto para a mãozinha fechar ao segurar! */
 }
 
 .obj-flutuante:hover {
@@ -1348,26 +1353,27 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 /* --- A RASPADINHA --- */
+/* --- A RASPADINHA --- */
 .raspadinha-container {
-    width: 100%;
-    aspect-ratio: 260 / 120;
-    /* Proporção de bilhete de loteria */
+    width: 250px;
+    height: 120px;
+    /* Tamanho fixo e seguro */
     background: #fff;
-    padding: 5%;
+    padding: 16px;
+    /* A BORDA MAIS GROSSA E SEGURA PARA ARRASTAR AQUI! */
     border-radius: 8px;
     box-sizing: border-box;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     border: 2px dashed #ccc;
     text-align: center;
     position: relative;
-    container-type: inline-size;
-    /* Mágica para a fonte */
+    /* Removido o container-type que criava a barreira invisível! */
 }
 
 .raspadinha-texto {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 8cqw;
-    /* Cresce e diminui com o objeto */
+    font-size: 20px;
+    /* Tamanho fixado para não bugar */
     font-weight: bold;
     color: #e74c3c;
     width: 100%;
@@ -1378,18 +1384,19 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     outline: none;
     overflow: hidden;
     word-wrap: break-word;
-    text-wrap: balance;
     line-height: 1.1;
 }
 
 .raspadinha-canvas {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 6px;
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>') 12 12, crosshair;
+    top: 16px;
+    /* Acompanha exatamente o padding para não invadir a borda de arraste */
+    left: 16px;
+    width: calc(100% - 32px);
+    /* Desconta o padding dos dois lados */
+    height: calc(100% - 32px);
+    border-radius: 4px;
+    cursor: crosshair;
     z-index: 2;
     touch-action: none;
 }
@@ -1554,27 +1561,60 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 /* Modifica o player HTML5 padrão para se camuflar no plástico escuro da fita */
+/* ==========================================
+   ESTILIZAÇÃO DO PLAYER DA FITA CASSETE
+   ========================================== */
 .fita-player {
     position: absolute;
     bottom: 9%;
-    /* Encaixado dentro do trapézio inferior */
     left: 18%;
     width: 64%;
     height: 28px;
     border-radius: 14px;
-    opacity: 0.6;
-    /* Fica meio transparente e "escondido" */
-    transition: opacity 0.3s;
-    /* Um truque CSS para escurecer o player nativo do navegador */
-    filter: grayscale(100%) contrast(1.2) brightness(0.8);
+    opacity: 0.8;
+    transition: opacity 0.3s, filter 0.3s;
+    /* Um filtro mais suave que mantém a vibe analógica sem estragar as cores novas */
+    filter: sepia(0.3) contrast(1.1) brightness(0.9);
+    outline: none;
 }
 
-/* Quando você for dar play, ele acende */
 .fita-cassete:hover .fita-player,
 .fita-player:focus,
 .fita-player:active {
-    opacity: 0.95;
-    filter: grayscale(100%) contrast(1) brightness(1);
+    opacity: 1;
+    filter: sepia(0) contrast(1) brightness(1);
+}
+
+/* --- A MÁGICA: Hackeando o visual nativo (WebKit) --- */
+.fita-player::-webkit-media-controls-panel {
+    background-color: #2c2c2c;
+    /* Fundo escuro igual às engrenagens da fita */
+    border-radius: 14px;
+    padding: 0 5px;
+}
+
+.fita-player::-webkit-media-controls-play-button,
+.fita-player::-webkit-media-controls-mute-button {
+    background-color: #d35400;
+    /* Laranja exato da etiqueta da fita */
+    border-radius: 50%;
+    transform: scale(0.85);
+    /* Deixa os botões mais delicados */
+}
+
+.fita-player::-webkit-media-controls-current-time-display,
+.fita-player::-webkit-media-controls-time-remaining-display {
+    color: #fdfbf7;
+    font-family: 'Courier Prime', monospace;
+    /* Fonte de máquina de escrever para os números! */
+    font-size: 11px;
+    text-shadow: none;
+}
+
+.fita-player::-webkit-media-controls-timeline {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin: 0 10px;
 }
 
 body.dark-mode .fita-cassete {
@@ -1918,8 +1958,10 @@ body.dark-mode .postit-objeto {
    CARIMBO DE PASSAPORTE
    ========================================== */
 .carimbo-objeto {
-    width: 180px;
-    height: 180px;
+    width: 100%;
+    /* ele obedece o redimensionamento do pai */
+    height: 100%;
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     border: 6px double rgba(192, 57, 43, 0.7);
     display: flex;
@@ -1930,30 +1972,31 @@ body.dark-mode .postit-objeto {
     font-family: 'Courier Prime', monospace;
     text-transform: uppercase;
     text-align: center;
-    padding: 10px;
+    padding: 5%;
     box-sizing: border-box;
-    /* A Mágica: Simula a tinta penetrando no papel */
     mix-blend-mode: multiply;
     filter: drop-shadow(1px 1px 0px rgba(255, 255, 255, 0.3));
 }
 
 .carimbo-local {
-    font-size: 24px;
+    font-size: 12cqw;
+    /* cqw = Container Query Width (Cresce junto com o pai) */
     font-weight: bold;
-    line-height: 1;
-    margin-bottom: 5px;
+    line-height: 1.1;
+    margin-bottom: 2cqw;
+    word-wrap: break-word;
 }
 
 .carimbo-data {
-    font-size: 14px;
+    font-size: 8cqw;
     border-top: 1px dashed rgba(192, 57, 43, 0.5);
-    padding-top: 5px;
+    padding-top: 2cqw;
 }
 
 .carimbo-icone {
-    font-size: 30px;
+    font-size: 16cqw;
     opacity: 0.6;
-    margin-bottom: 5px;
+    margin-bottom: 2cqw;
 }
 
 body.dark-mode .carimbo-objeto {
@@ -2151,4 +2194,63 @@ body.dark-mode .carimbo-objeto {
 .modo-leitura-ativo .selo-cera,
 .modo-leitura-ativo .raspadinha-canvas {
     pointer-events: auto !important;
+}
+
+/* ==========================================
+   TRAVAS DA PÁGINA (Impedir Crescimento Horizontal)
+   ========================================== */
+.folha-a4 {
+    overflow-x: hidden !important;
+    /* Esconde qualquer coisa que tente vazar pro lado */
+    max-width: 100%;
+    /* Trava o crescimento do elemento na tela */
+}
+
+/* Força textos gigantes (como links sem espaço) a quebrarem de linha, respeitando a margem */
+.folha-a4 * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ==========================================
+   BOTÃO DE EDITAR INGRESSO (Lapisinho)
+   ========================================== */
+.btn-editar-ingresso {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.btn-editar-ingresso:hover {
+    transform: scale(1.15) rotate(10deg);
+    border-color: #f44336;
+}
+
+/* Força o navegador a entender que estes itens são "arrastáveis" */
+.polaroid,
+.fita-cassete,
+.card-pergunta {
+    -webkit-user-drag: element;
+    cursor: grab;
+    vertical-align: top;
+    /* A MÁGICA 2: Faz o texto iniciar no topo do objeto, e não no rodapé! */
+}
+
+.polaroid:active,
+.fita-cassete:active,
+.card-pergunta:active {
+    cursor: grabbing;
 }
