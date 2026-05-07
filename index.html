@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Memories Box — Seu espaço seguro para guardar memórias, cartas, fotos e momentos especiais com quem você ama.">
     <title>Memories Box</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -14,14 +16,15 @@
 
     <div id="telaLogin" class="tela-login">
         <h2>Memories Box</h2>
+        <p class="login-subtitulo">Seu espaço seguro.</p>
         <input type="email" id="inputEmail" placeholder="Seu e-mail">
         <input type="password" id="inputSenha" placeholder="Sua senha">
         <button id="btnEntrar">Entrar</button>
         <button id="btnCadastrar" class="btn-secundario" style="margin-top: 5px;">Criar Conta</button>
-        <p style="margin-top: 15px; font-size: 13px;">
-            <a href="#" id="btnEsqueciSenha" style="color: var(--texto-secundario);">Esqueci minha senha</a>
+        <div id="mensagemLogin" class="mensagem-login"></div>
+        <p class="link-esqueci">
+            <a href="#" id="btnEsqueciSenha">Esqueci minha senha</a>
         </p>
-        <div id="mensagemLogin" style="color: #f44336; margin-top: 10px; font-size: 14px;"></div>
     </div>
 
     <div id="telaDashboard" class="tela-dashboard escondido">
@@ -211,6 +214,7 @@
 
                 <div class="folha-a4 fundo-limpo fonte-padrao" id="folhaA4Wrapper">
                     <div id="caixaDeTexto" class="editor-rico" contenteditable="true"></div>
+                    <span id="saveStatus" class="save-status escondido">Salvo!</span>
                     <div id="areaStickers" class="area-stickers"></div>
 
                     <canvas id="camadaDesenho" class="camada-desenho"></canvas>
@@ -247,15 +251,43 @@
                 </div>
             </div>
 
-            <div id="painelLateral" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-                <div id="containerMusica" class="escondido" style="width: 100%;">
-                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 16px; color: #ff9800;">🎵 Nosso Som</h3>
+            <div id="painelLateral" style="flex: 1; display: flex; flex-direction: column; gap: 0;">
+                <div class="painel-lateral-tabs">
+                    <button class="tab-lateral-btn ativo" data-tab="musica" title="Nosso Som">🎵<span
+                            class="tab-label">Nosso Som</span></button>
+                    <button class="tab-lateral-btn" data-tab="watchlist" title="Watchlist">🎬<span
+                            class="tab-label">Watchlist</span></button>
+                    <button class="tab-lateral-btn" data-tab="planos" title="Planos">✅<span
+                            class="tab-label">Planos</span></button>
+                    <button class="tab-lateral-btn" data-tab="contagem" title="Eventos">⏳<span
+                            class="tab-label">Eventos</span></button>
+                </div>
+
+                <div id="containerMusica" class="tab-conteudo bloco escondido" data-tab-conteudo="musica"
+                    style="margin-bottom: 0;">
+                    <h2>🎵 Nosso Som</h2>
                     <div id="widgetMusica"
                         style="width: 100%; border-radius: 12px; overflow: hidden; background-color: var(--bg-caixas); border: 1px solid var(--borda);">
                     </div>
                 </div>
 
-                <div id="containerPlanos" class="bloco" style="margin-bottom: 0;">
+                <div id="containerWatchlist" class="tab-conteudo bloco escondido" data-tab-conteudo="watchlist"
+                    style="margin-bottom: 0; cursor: pointer;">
+                    <h2
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        🎬 Watchlist
+                        <span
+                            style="font-size: 13px; color: var(--texto-secundario); font-family: 'Inter', sans-serif; font-weight: 400;">Clique
+                            para abrir ↗</span>
+                    </h2>
+                    <div id="listaWatchlistPreview"
+                        style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--texto-secundario);">
+                        Carregando...
+                    </div>
+                </div>
+
+                <div id="containerPlanos" class="tab-conteudo bloco escondido" data-tab-conteudo="planos"
+                    style="margin-bottom: 0;">
                     <h2>Planos/Metas</h2>
                     <ul id="listaTarefas"></ul>
                     <div id="controlesTarefas" style="display: flex; gap: 5px; margin-top: 15px;">
@@ -264,7 +296,8 @@
                             style="display: flex; margin-top: 5px; margin-bottom: 5px;">Add</button>
                     </div>
                 </div>
-                <div id="containerContagem" class="bloco" style="margin-bottom: 0;">
+                <div id="containerContagem" class="tab-conteudo bloco escondido" data-tab-conteudo="contagem"
+                    style="margin-bottom: 0;">
                     <h2
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         ⏳ Ansiedade Boa
@@ -285,6 +318,10 @@
             <button class="nav-mobile-btn" data-painel="musica">
                 <span class="nav-icone">🎵</span>
                 <span class="nav-label">Música</span>
+            </button>
+            <button class="nav-mobile-btn" data-painel="watchlist">
+                <span class="nav-icone">🎬</span>
+                <span class="nav-label">Filmes</span>
             </button>
             <button class="nav-mobile-btn" data-painel="planos">
                 <span class="nav-icone">✅</span>
@@ -322,7 +359,7 @@
                 <label class="switch"><input type="checkbox" id="toggleModoEscuro"><span class="slider"></span></label>
             </div>
             <button id="btnSairDash"
-                style="width: 100%; background-color: transparent; border: 1px solid #f44336; color: #f44336;box-shadow: 0 4px 0 #b62828, 0 5px 10px rgba(0, 0, 0, 0.2);">Sair
+                style="width: 100%; background-color: transparent; border: 1px solid #f44336; color: #f44336;">Sair
                 da
                 Conta</button>
             <button class="btn-sair btn-fechar-modal" style="width: 100%;margin-top: 10px">Fechar</button>
@@ -365,13 +402,28 @@
                     <option value="fundo-quadriculado">Caderno Quadriculado</option>
                 </select>
                 <hr>
-                <label>🔒 Senha do Caderno (Deixe em branco para público):</label>
-                <input type="password" id="inputPinCaderno" autocomplete="new-password" data-lpignore="true"
-                    placeholder="Crie uma senha de acesso..." style="margin-bottom: 15px;">
+                <h3 style="margin-top:10px; margin-bottom:10px; font-size:15px;">📦 Módulos Opcionais</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 14px;">🎵 Nosso Som</label>
+                    <label class="switch"><input type="checkbox" id="toggleModuloMusica"><span
+                            class="slider"></span></label>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 14px;">🎬 Watchlist (Filmes/Séries)</label>
+                    <label class="switch"><input type="checkbox" id="toggleModuloWatchlist"><span
+                            class="slider"></span></label>
+                </div>
+
+                <div id="campoMusica" class="escondido">
+                    <label>🎵 Música / Playlist (Link do Spotify):</label>
+                    <input type="text" id="inputLinkMusica" placeholder="Cole o link do Spotify..."
+                        style="margin-bottom: 15px; font-size: 12px;">
+                </div>
+
                 <hr>
-                <label>🎵 Música / Playlist (Link do Spotify):</label>
-                <input type="text" id="inputLinkMusica" placeholder="Cole o link do Spotify..."
-                    style="margin-bottom: 15px; font-size: 12px;">
+                <label>🔒 Coloque uma senha para proteger caderno:</label>
+                <input type="password" id="inputPinCaderno" autocomplete="new-password" data-lpignore="true"
+                    placeholder="Nova senha (vazio = manter atual)" style="margin-bottom: 15px;">
 
                 <button id="btnSalvarConfigCaderno" style="width: 100%; margin-bottom: 10px;">Salvar Estilo</button>
                 <hr>
@@ -425,6 +477,90 @@
                 class="btn-secundario btn-fechar-modal"
                 style="background-color: gray; width: 100%; box-shadow: 0 4px 0 #505050, 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
+    </div>
+    <div id="modalWatchlist" class="modal-overlay escondido">
+        <div class="modal-conteudo">
+            <h2 id="tituloModalWatchlist">🎬 Adicionar à Watchlist</h2>
+            <div style="text-align: left;">
+                <label>Título:</label>
+                <input type="text" id="inputTituloWatchlist" placeholder="Ex: Breaking Bad"
+                    style="margin-bottom: 12px;">
+                <label>Tipo:</label>
+                <select id="selectTipoWatchlist"
+                    style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 5px;">
+                    <option value="serie">📺 Série</option>
+                    <option value="filme">🎬 Filme</option>
+                </select>
+                <label>Foto/Capa (opcional):</label>
+                <label for="inputFotoWatchlist" class="label-arquivo"
+                    style="width: 100%; box-sizing: border-box; display: inline-block; padding: 12px; border-radius: 8px; background-color: rgba(0,0,0,0.05); border: 1px dashed var(--borda); color: var(--texto-principal); text-align: center; margin-bottom: 12px; cursor: pointer; transition: background 0.2s;">📸
+                    Escolher
+                    Foto</label>
+                <input type="file" id="inputFotoWatchlist" class="input-arquivo-oculto" accept="image/*">
+                <div id="previewFotoWatchlist" style="text-align: center; margin-bottom: 12px;"></div>
+            </div>
+            <input type="hidden" id="watchlistEditandoId" value="">
+            <button id="btnSalvarWatchlist" style="width: 100%; margin-bottom: 10px;">Adicionar</button>
+            <button class="btn-secundario btn-fechar-modal"
+                style="background-color: gray; width: 100%; box-shadow: 0 4px 0 #505050, 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- TELA CHEIA DA WATCHLIST -->
+    <div id="modalAnotacaoWatchlist" class="modal-overlay escondido" style="z-index: 5000;">
+        <div class="modal-conteudo">
+            <h2 id="tituloModalAnotacao">📝 Anotação</h2>
+            <textarea id="inputAnotacaoWatchlist" rows="5"
+                style="width: 100%; padding: 10px; font-family: 'Inter', sans-serif; font-size: 14px; border-radius: 8px; border: 1px solid var(--borda); margin-bottom: 15px; box-sizing: border-box;"></textarea>
+            <input type="hidden" id="anotacaoItemId" value="">
+            <input type="hidden" id="anotacaoUid" value="">
+            <button id="btnSalvarAnotacao" style="width: 100%; margin-bottom: 10px;">Salvar Anotação</button>
+            <button class="btn-secundario btn-fechar-modal"
+                style="background-color: gray; width: 100%; box-shadow: 0 4px 0 #505050, 0 5px 10px rgba(0, 0, 0, 0.2);">Fechar</button>
+        </div>
+    </div>
+
+    <div id="modalExcluirWatchlist" class="modal-overlay escondido" style="z-index: 5000;">
+        <div class="modal-conteudo">
+            <h2>🗑️ Excluir Título</h2>
+            <p>Deseja realmente remover <b id="nomeFilmeExcluir">este título</b> da watchlist?</p>
+            <p style="color: #f44336; font-size: 13px; margin-bottom: 15px;">Todos os status, notas e anotações dos
+                participantes serão perdidos.</p>
+            <input type="hidden" id="idFilmeExcluir" value="">
+            <button id="btnConfirmarExcluirWatchlist" class="btn-sair" style="width: 100%; margin-bottom: 10px;">Sim,
+                excluir</button>
+            <button class="btn-secundario btn-fechar-modal"
+                style="background-color: gray; width: 100%; box-shadow: 0 4px 0 #505050, 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="telaWatchlist" class="escondido">
+        <div class="watchlist-fullscreen-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="btnVoltarWatchlist" class="btn-pequeno" style="font-size: 16px;">⬅</button>
+                <h1 style="margin: 0; font-size: 22px;">🎬 Watchlist</h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="watchlist-filtros-fullscreen">
+                    <button class="btn-pequeno filtro-watchlist-full ativo" data-filtro="todos">Todos</button>
+                    <button class="btn-pequeno filtro-watchlist-full" data-filtro="assistindo">▶️ Assistindo</button>
+                    <button class="btn-pequeno filtro-watchlist-full" data-filtro="quero">📌 Quero Ver</button>
+                    <button class="btn-pequeno filtro-watchlist-full" data-filtro="assistido">✅ Assistido</button>
+
+                    <select id="selectOrdemWatchlist"
+                        style="font-size: 13px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--borda); background: var(--bg-caixas); color: var(--texto-principal); cursor: pointer; height: 32px; font-family: 'Inter', sans-serif; width: auto;">
+                        <option value="mais-recentes">🕒 Adicionados Recentes</option>
+                        <option value="mais-antigos">⏳ Adicionados Antigos</option>
+                        <option value="az">🔤 A - Z</option>
+                        <option value="za">🔤 Z - A</option>
+                    </select>
+                </div>
+                <button id="btnAdicionarWatchlistFull" class="btn-pequeno"
+                    style="background: var(--accent-secondary); color: white; font-size: 14px; padding: 8px 16px;">➕
+                    Adicionar</button>
+            </div>
+        </div>
+        <div id="gridWatchlist" class="watchlist-grid"></div>
     </div>
     <div id="modalExcluirPagina" class="modal-overlay escondido">
         <div class="modal-conteudo">
