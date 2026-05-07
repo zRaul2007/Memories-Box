@@ -1,39 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 
+/* ==========================================
+   DESIGN SYSTEM — Memories Box Premium
+   ========================================== */
 :root {
-    /* Cores de papel creme, quente e aconchegante */
-    --bg-fundo: #f4eee1;
-    --bg-caixas: #faf7f0;
-    --texto-principal: #3e3832;
-    --texto-secundario: #8c7b6c;
-    --borda: #dcd0c0;
-    /* Adicionando uma textura sutil de papel */
-    --textura: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+    --bg-fundo: #faf6f0;
+    --bg-caixas: #fffdf8;
+    --bg-elevado: #ffffff;
+    --bg-nav: #fffdf8;
+    --texto-principal: #3c322a;
+    --texto-secundario: #9a8a78;
+    --borda: #e8ddd0;
+    --accent-primary: #c0755a;
+    --accent-secondary: #6882a3;
+    --accent-success: #7a9e6e;
+    --accent-danger: #c0392b;
+    --accent-warning: #d4855a;
+    --sombra-card: 0 2px 12px rgba(60, 50, 42, 0.06), 0 1px 3px rgba(60, 50, 42, 0.08);
+    --sombra-hover: 0 8px 24px rgba(60, 50, 42, 0.12);
+    --sombra-modal: 0 24px 64px rgba(60, 50, 42, 0.18);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --textura: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
 body.dark-mode {
-    /* Tons de madeira escura e noite */
-    --bg-fundo: #1a1816;
-    --bg-caixas: #262320;
-    --texto-principal: #e8e4db;
-    --texto-secundario: #9e9387;
-    --borda: #3b3631;
+    --bg-fundo: #1c1917;
+    --bg-caixas: #292524;
+    --bg-elevado: #332f2b;
+    --bg-nav: #292524;
+    --texto-principal: #ede8e0;
+    --texto-secundario: #a89a8c;
+    --borda: #3d3630;
+    --accent-primary: #d49a7e;
+    --accent-secondary: #8da7c8;
+    --accent-success: #8fb87e;
+    --accent-danger: #e74c3c;
+    --accent-warning: #e8a070;
+    --sombra-card: 0 2px 12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.15);
+    --sombra-hover: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --sombra-modal: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
 
+/* ==========================================
+   BASE
+   ========================================== */
 body {
-    /* Mantém o que você tem, mas adiciona a textura ao fundo */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-fundo);
     background-image: var(--textura);
-    /* Magia aqui */
     color: var(--texto-principal);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
     margin: 0;
-    transition: background-color 0.3s;
+    transition: background-color 0.4s ease, color 0.3s ease;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .escondido {
@@ -43,67 +69,94 @@ body {
 h1,
 h2,
 h3 {
+    font-family: 'Lora', 'Georgia', serif;
     color: var(--texto-principal);
     margin-top: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
-/* --- Substitua a classe .tela-login e adicione a estilização do H2 e do ::before --- */
-
+/* ==========================================
+   TELA DE LOGIN
+   ========================================== */
 .tela-login {
     background: var(--bg-caixas);
     background-image: var(--textura);
-    /* Traz a textura de papel pra cá também */
-    padding: 50px 40px;
-    border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), inset 0 0 0 2px var(--borda);
-    width: 320px;
+    padding: 48px 40px 36px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--sombra-modal);
+    width: 340px;
     text-align: center;
     margin-top: 10vh;
     position: relative;
     border: 1px solid var(--borda);
 }
 
-/* Fita adesiva segurando a tela de login */
 .tela-login::before {
     content: '';
     position: absolute;
-    top: -15px;
+    top: -14px;
     left: 50%;
-    transform: translateX(-50%) rotate(2deg);
-    width: 120px;
-    height: 35px;
-    background-color: rgba(255, 255, 200, 0.4);
+    transform: translateX(-50%) rotate(1.5deg);
+    width: 100px;
+    height: 30px;
+    background-color: rgba(255, 255, 200, 0.35);
     backdrop-filter: blur(4px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     z-index: 10;
+    border-radius: 2px;
 }
 
 body.dark-mode .tela-login::before {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Fonte estilo escrita à mão para o título principal */
 .tela-login h2 {
     font-family: 'Caveat', cursive;
-    font-size: 48px;
+    font-size: 46px;
     color: var(--texto-principal);
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     margin-top: 0;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-/* Uma subtítulo sutil para dar o tom íntimo */
-.tela-login::after {
-    content: 'Seu espaço seguro.';
-    display: block;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.login-subtitulo {
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: var(--texto-secundario);
-    margin-top: -15px;
-    margin-bottom: 25px;
+    margin: -8px 0 24px 0;
     font-style: italic;
+    letter-spacing: 0.3px;
 }
 
+.mensagem-login {
+    color: var(--accent-danger);
+    font-size: 13px;
+    min-height: 18px;
+    margin-top: 10px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+
+.link-esqueci {
+    margin-top: 12px;
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
+.link-esqueci a {
+    color: var(--texto-secundario);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.link-esqueci a:hover {
+    color: var(--accent-primary);
+}
+
+/* ==========================================
+   DASHBOARD E APP
+   ========================================== */
 .tela-app,
 .tela-dashboard {
     width: 100%;
@@ -129,7 +182,7 @@ body.dark-mode .tela-login::before {
 .avatar-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .avatar {
@@ -138,7 +191,8 @@ body.dark-mode .tela-login::before {
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--borda);
-    background-color: #eee;
+    background-color: var(--bg-elevado);
+    transition: border-color 0.2s;
 }
 
 .avatar-pequeno {
@@ -147,7 +201,7 @@ body.dark-mode .tela-login::before {
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--borda);
-    background-color: #eee;
+    background-color: var(--bg-elevado);
 }
 
 .info-usuario {
@@ -161,13 +215,13 @@ body.dark-mode .tela-login::before {
 
 .perfil-clicavel {
     cursor: pointer;
-    padding: 5px;
-    border-radius: 8px;
+    padding: 6px;
+    border-radius: var(--radius-sm);
     transition: background-color 0.2s;
 }
 
 .perfil-clicavel:hover {
-    background-color: rgba(128, 128, 128, 0.1);
+    background-color: rgba(128, 128, 128, 0.08);
 }
 
 .area-presenca {
@@ -185,7 +239,7 @@ body.dark-mode .tela-login::before {
 }
 
 .avatar-presenca:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     z-index: 10;
 }
 
@@ -203,7 +257,7 @@ body.dark-mode .tela-login::before {
     right: 0;
     width: 10px;
     height: 10px;
-    background-color: #4CAF50;
+    background-color: var(--accent-success);
     border-radius: 50%;
     border: 2px solid var(--bg-caixas);
 }
@@ -216,14 +270,14 @@ body.dark-mode .tela-login::before {
     background: var(--bg-caixas);
     border-radius: 50%;
     padding: 2px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .painel-humor {
     display: flex;
     gap: 8px;
     background: var(--bg-caixas);
-    padding: 5px 10px;
+    padding: 5px 12px;
     border-radius: 20px;
     border: 1px solid var(--borda);
     margin-top: 5px;
@@ -261,31 +315,61 @@ body.dark-mode .tela-login::before {
     align-items: flex-start;
 }
 
+/* ==========================================
+   CARDS / BLOCOS (Moleskine Style)
+   ========================================== */
 .bloco {
     background: var(--bg-caixas);
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 22px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-card);
     flex: 1;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--borda);
     margin-bottom: 20px;
     box-sizing: border-box;
+    transition: box-shadow 0.3s ease;
 }
 
+.bloco:hover {
+    box-shadow: var(--sombra-hover);
+}
+
+/* ==========================================
+   INPUTS, SELECT, CHECKBOX
+   ========================================== */
 input[type="text"],
 input[type="password"],
 input[type="email"],
 select {
     width: 100%;
-    padding: 10px;
+    padding: 11px 14px;
     margin: 5px 0;
-    border: 1px solid var(--borda);
-    border-radius: 5px;
+    border: 1.5px solid var(--borda);
+    border-radius: var(--radius-sm);
     box-sizing: border-box;
     background-color: var(--bg-fundo);
     color: var(--texto-principal);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(192, 117, 90, 0.1);
+}
+
+body.dark-mode input[type="text"]:focus,
+body.dark-mode input[type="password"]:focus,
+body.dark-mode input[type="email"]:focus,
+body.dark-mode select:focus {
+    box-shadow: 0 0 0 3px rgba(212, 154, 126, 0.12);
 }
 
 input[type="checkbox"] {
@@ -293,75 +377,94 @@ input[type="checkbox"] {
     height: 18px;
     margin: 0;
     cursor: pointer;
-    accent-color: #4CAF50;
+    accent-color: var(--accent-primary);
 }
 
+/* ==========================================
+   BUTTONS (Modern, Clean, No 3D)
+   ========================================== */
 button {
-    padding: 10px 15px;
-    background-color: #4CAF50;
+    padding: 10px 18px;
+    background-color: var(--accent-primary);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-weight: bold;
-    box-shadow: 0 4px 0 #388E3C, 0 5px 10px rgba(0, 0, 0, 0.2);
-    /* Borda 3D inferior */
-    transition: all 0.1s ease;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(192, 117, 90, 0.2);
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
 }
 
 button:active {
-    transform: translateY(4px);
-    /* Botão afunda ao clicar */
-    box-shadow: 0 0 0 #388E3C, 0 2px 5px rgba(0, 0, 0, 0.2);
+    transform: scale(0.97);
+    box-shadow: 0 1px 4px rgba(192, 117, 90, 0.15);
 }
 
 button:hover {
-    filter: brightness(1.1);
+    box-shadow: 0 4px 16px rgba(192, 117, 90, 0.3);
+    transform: translateY(-1px);
+    filter: none;
 }
 
 button:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     transform: none;
     box-shadow: none;
     cursor: not-allowed;
 }
 
 .btn-secundario {
-    background-color: #2196F3;
-    box-shadow: 0 4px 0 #1976D2, 0 5px 10px rgba(0, 0, 0, 0.2);
-    /* Sombra azul escura */
+    background-color: var(--accent-secondary);
+    box-shadow: 0 2px 8px rgba(104, 130, 163, 0.2);
+}
+
+.btn-secundario:hover {
+    box-shadow: 0 4px 16px rgba(104, 130, 163, 0.3);
 }
 
 .btn-secundario:active {
-    box-shadow: 0 0 0 #1976D2, 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 4px rgba(104, 130, 163, 0.15);
 }
 
 .btn-sair {
-    background-color: #f44336;
-    box-shadow: 0 4px 0 #d32f2f, 0 5px 10px rgba(0, 0, 0, 0.2);
-    /* Sombra vermelha escura */
+    background-color: var(--accent-danger);
+    box-shadow: 0 2px 8px rgba(192, 57, 43, 0.2);
+}
+
+.btn-sair:hover {
+    box-shadow: 0 4px 16px rgba(192, 57, 43, 0.3);
 }
 
 .btn-sair:active {
-    box-shadow: 0 0 0 #d32f2f, 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 4px rgba(192, 57, 43, 0.15);
 }
 
 .btn-pequeno {
-    padding: 6px 10px;
+    padding: 6px 12px;
     font-size: 12px;
-    background-color: var(--borda);
+    background-color: var(--bg-elevado);
     color: var(--texto-principal);
+    border: 1px solid var(--borda);
     margin: 2px;
-    /* Sombra neutra adaptável ao modo claro/escuro */
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    font-weight: 500;
+}
+
+.btn-pequeno:hover {
+    background-color: var(--borda);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
 
 .btn-pequeno:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.1);
+    transform: scale(0.96);
+    box-shadow: none;
 }
 
-/* Proteção para os botões que são apenas ícones não ficarem com blocos 3D estranhos */
+/* Icons-only buttons: no shadow */
 .btn-format,
 .btn-sticker,
 .btn-humor,
@@ -374,7 +477,6 @@ button:disabled {
 .btn-sticker:active,
 .btn-humor:active {
     transform: scale(0.9) !important;
-    /* Efeito de aperto apenas reduzindo o tamanho */
     box-shadow: none !important;
 }
 
@@ -385,52 +487,66 @@ button:disabled {
 .label-arquivo {
     display: inline-block;
     padding: 8px 15px;
-    background-color: var(--borda);
+    background-color: var(--bg-elevado);
     color: var(--texto-principal);
-    border-radius: 5px;
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 600;
     text-align: center;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
 }
 
 .label-arquivo:hover {
-    background-color: var(--texto-secundario);
+    background-color: var(--accent-primary);
     color: white;
+    border-color: var(--accent-primary);
 }
 
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-fundo);
+    background: transparent;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--texto-secundario);
+    background: var(--borda);
     border-radius: 4px;
-    opacity: 0.5;
 }
 
+::-webkit-scrollbar-thumb:hover {
+    background: var(--texto-secundario);
+}
+
+/* ==========================================
+   CONVITES
+   ========================================== */
 .caixa-convites {
-    background-color: #fff3e0;
-    border-left: 5px solid #ff9800;
+    background-color: #fef5e7;
+    border-left: 4px solid var(--accent-warning);
     padding: 15px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     margin-bottom: 20px;
     width: 100%;
     box-sizing: border-box;
 }
 
 body.dark-mode .caixa-convites {
-    background-color: #4e342e;
-    border-color: #ffb74d;
+    background-color: #3d2f1f;
+    border-color: var(--accent-warning);
 }
 
+/* ==========================================
+   LISTA DE CADERNOS
+   ========================================== */
 .lista-cadernos {
     list-style: none;
     padding: 0;
@@ -439,56 +555,59 @@ body.dark-mode .caixa-convites {
 
 .item-caderno {
     background: var(--bg-caixas);
-    padding: 15px;
+    padding: 16px;
     margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-card);
     display: flex;
     justify-content: space-between;
     align-items: center;
     border: 1px solid var(--borda);
-    transition: border-left 0.3s;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
 
-/* A FOLHA A4 E EDITOR */
+.item-caderno:hover {
+    box-shadow: var(--sombra-hover);
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   FOLHA A4 E EDITOR
+   ========================================== */
 .folha-a4 {
     position: relative;
     width: 100%;
     max-width: 800px;
     height: 1122px;
-    /* Altura exata de uma Folha A4 na web */
     max-height: 1122px;
     margin: 0 auto;
     border: 1px solid var(--borda);
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(60, 50, 42, 0.08), 0 1px 4px rgba(60, 50, 42, 0.05);
     border-radius: 4px;
     box-sizing: border-box;
     overflow: hidden;
-    /* Nada vaza da folha! */
+}
+
+body.dark-mode .folha-a4 {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .editor-rico {
     width: 100%;
     height: 100%;
-    /* Preenche a folha inteira */
     max-height: 100%;
     overflow-y: hidden !important;
-    /* Se digitar muito, rola apenas o texto, sem esticar o papel */
     font-size: 16px;
     padding: 40px;
     box-sizing: border-box;
     outline: none;
-    line-height: 1.6;
+    line-height: 1.7;
     z-index: 1;
     position: relative;
     padding-bottom: 40px !important;
-    /* Espaço de sobra no final da página */
     overflow-x: hidden !important;
-    /* Corta imediatamente qualquer coisa que vazar pros lados */
     max-width: 100%;
-    /* Garante que o editor não estique o papel */
     word-break: break-word;
-    /* Força palavras gigantes a se quebrarem */
 }
 
 .editor-rico::-webkit-scrollbar {
@@ -501,11 +620,11 @@ body.dark-mode .caixa-convites {
 }
 
 .editor-rico:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.12);
 }
 
 body.dark-mode .editor-rico:hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .editor-rico img {
@@ -513,26 +632,21 @@ body.dark-mode .editor-rico:hover::-webkit-scrollbar-thumb {
     border-radius: 4px;
 }
 
-/* NOVO: POLAROIDS E DESENHOS */
+/* ==========================================
+   POLAROIDS
+   ========================================== */
 .polaroid {
     background: #fff;
-    padding: 12px 12px 25px 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 14px 14px 28px 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
     display: inline-block;
     margin: 15px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     max-width: 45%;
-    border: 1px solid #ddd;
-}
-
-/* --- Adicione este bloco ABAIXO da regra .polaroid { ... } --- */
-
-.polaroid {
+    border: 1px solid #eee;
     position: relative;
-    /* Garante que a fita fique presa nela */
 }
 
-/* Criando o durex/fita adesiva no topo da foto */
 .polaroid::before {
     content: '';
     position: absolute;
@@ -541,17 +655,14 @@ body.dark-mode .editor-rico:hover::-webkit-scrollbar-thumb {
     transform: translateX(-50%) rotate(-2deg);
     width: 80px;
     height: 25px;
-    background-color: rgba(255, 255, 200, 0.4);
-    /* Amarelado translúcido */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 200, 0.35);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     z-index: 10;
     backdrop-filter: blur(2px);
-    /* Efeito de durex realista */
 }
 
 body.dark-mode .polaroid::before {
-    background-color: rgba(255, 255, 255, 0.15);
-    /* Fita mais opaca no escuro */
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .polaroid:nth-child(even) {
@@ -563,15 +674,15 @@ body.dark-mode .polaroid::before {
 }
 
 .polaroid:hover {
-    transform: scale(1.02) rotate(0deg);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    transform: scale(1.03) rotate(0deg);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
     z-index: 10;
     position: relative;
 }
 
 .polaroid-img {
     width: 100%;
-    border: 1px solid #eee;
+    border: 1px solid #f0ece6;
     display: block;
 }
 
@@ -588,9 +699,11 @@ body.dark-mode .polaroid::before {
 
 body.dark-mode .polaroid {
     background: #fdfbf7;
-    /* Polaroid é sempre branca mesmo no modo escuro */
 }
 
+/* ==========================================
+   CANVAS DE DESENHO
+   ========================================== */
 .camada-desenho {
     position: absolute;
     top: 0;
@@ -612,7 +725,9 @@ body.dark-mode .polaroid {
     user-select: none;
 }
 
-/* CÁPSULA E STICKERS */
+/* ==========================================
+   CÁPSULA DO TEMPO
+   ========================================== */
 .camada-capsula {
     position: absolute;
     top: 0;
@@ -643,19 +758,20 @@ body.dark-mode .camada-capsula {
 }
 
 @keyframes pulsarCadeado {
-    0% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
 
     50% {
         transform: scale(1.1);
     }
-
-    100% {
-        transform: scale(1);
-    }
 }
 
+/* ==========================================
+   STICKERS
+   ========================================== */
 .area-stickers {
     position: absolute;
     top: 0;
@@ -673,7 +789,7 @@ body.dark-mode .camada-capsula {
     cursor: grab;
     font-size: 45px;
     user-select: none;
-    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.25));
     transform-origin: center;
     display: inline-block;
 }
@@ -686,11 +802,11 @@ body.dark-mode .camada-capsula {
     background: var(--bg-caixas);
     border: 1px solid var(--borda);
     padding: 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--sombra-card);
     justify-content: center;
     flex-wrap: wrap;
 }
@@ -733,6 +849,9 @@ body.dark-mode .camada-capsula {
     }
 }
 
+/* ==========================================
+   PAGINAÇÃO
+   ========================================== */
 .controles-paginacao {
     display: flex;
     justify-content: center;
@@ -744,8 +863,11 @@ body.dark-mode .camada-capsula {
     flex-wrap: wrap;
 }
 
+/* ==========================================
+   FONTES TEMÁTICAS
+   ========================================== */
 .fonte-padrao {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
 }
 
 .fonte-maquina {
@@ -761,6 +883,9 @@ body.dark-mode .camada-capsula {
     font-family: 'Lora', serif;
 }
 
+/* ==========================================
+   FUNDOS TEMÁTICOS
+   ========================================== */
 .fundo-limpo {
     background-image: none;
     background-color: var(--bg-fundo);
@@ -784,6 +909,9 @@ body.dark-mode .camada-capsula {
     background-size: 20px 20px;
 }
 
+/* ==========================================
+   LISTAS E TAREFAS
+   ========================================== */
 ul {
     list-style-type: none;
     padding: 0;
@@ -813,37 +941,71 @@ li {
     color: var(--texto-secundario);
 }
 
-/* MODAIS E TOOLBARS */
+/* ==========================================
+   MODAIS
+   ========================================== */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-conteudo {
     background: var(--bg-caixas);
-    padding: 30px;
-    border-radius: 10px;
+    background-image: var(--textura);
+    padding: 32px;
+    border-radius: var(--radius-lg);
     width: 90%;
-    max-width: 450px;
+    max-width: 420px;
+    max-height: 85vh;
+    overflow-y: auto;
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--sombra-modal);
     border: 1px solid var(--borda);
+    animation: scaleIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.92);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-conteudo hr {
     border: 0;
     border-top: 1px solid var(--borda);
-    margin: 15px 0;
+    margin: 18px 0;
 }
 
+/* ==========================================
+   TOGGLE SWITCH
+   ========================================== */
 .switch {
     position: relative;
     display: inline-block;
@@ -864,8 +1026,8 @@ li {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
+    background-color: var(--borda);
+    transition: .3s;
     border-radius: 24px;
 }
 
@@ -877,18 +1039,22 @@ li {
     left: 4px;
     bottom: 4px;
     background-color: white;
-    transition: .4s;
+    transition: .3s;
     border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 input:checked+.slider {
-    background-color: #4CAF50;
+    background-color: var(--accent-primary);
 }
 
 input:checked+.slider:before {
     transform: translateX(26px);
 }
 
+/* ==========================================
+   SELETOR DE CORES
+   ========================================== */
 .seletor-cores {
     display: flex;
     gap: 8px;
@@ -901,33 +1067,32 @@ input:checked+.slider:before {
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .bolinha-cor:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
 }
 
 .bolinha-cor.selecionada {
     border: 2px solid var(--texto-principal);
-    transform: scale(1.1);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
 }
 
+/* ==========================================
+   TOOLBARS FLUTUANTES (Glassmorphism)
+   ========================================== */
 .toolbar-flutuante {
     position: fixed;
-    background: rgba(30, 30, 30, 0.75);
-    /* Fundo translúcido */
-    backdrop-filter: blur(12px);
-    /* Efeito de vidro jateado */
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    /* Bordinha de brilho */
+    background: rgba(30, 30, 30, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
-    padding: 6px 8px;
-    border-radius: 16px;
-    /* Formato de pílula */
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    padding: 6px 10px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -937,7 +1102,6 @@ input:checked+.slider:before {
     margin-top: -12px;
 }
 
-/* Esconde o antigo triângulo que apontava pra baixo */
 .toolbar-flutuante::after {
     display: none;
 }
@@ -950,51 +1114,55 @@ input:checked+.slider:before {
     font-size: 16px;
     padding: 6px 10px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .btn-format:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .divisor-toolbar {
     width: 1px;
     height: 18px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     margin: 0 4px;
 }
 
+/* ==========================================
+   TAGS DE CARGO
+   ========================================== */
 .tag-cargo {
     font-size: 11px;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 12px;
     color: white;
-    font-weight: bold;
+    font-weight: 600;
     margin-left: 5px;
+    font-family: 'Inter', sans-serif;
 }
 
 .cargo-dono {
-    background-color: #f44336;
+    background-color: var(--accent-danger);
 }
 
 .cargo-admin {
-    background-color: #ff9800;
+    background-color: var(--accent-warning);
 }
 
 .cargo-editor {
-    background-color: #4CAF50;
+    background-color: var(--accent-success);
 }
 
 .cargo-leitor {
-    background-color: #607d8b;
+    background-color: var(--accent-secondary);
 }
 
 /* ==========================================
-   HAMBURGER MENU
+   MENU HAMBÚRGUER
    ========================================== */
 .cabecalho-direito {
     display: flex;
@@ -1010,7 +1178,7 @@ input:checked+.slider:before {
 .btn-hamburguer {
     background: var(--bg-caixas);
     border: 1px solid var(--borda);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 0;
     cursor: pointer;
     display: flex;
@@ -1020,12 +1188,11 @@ input:checked+.slider:before {
     height: 40px;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.2s, border-color 0.2s;
+    transition: background-color 0.2s;
 }
 
 .btn-hamburguer:hover {
     background-color: var(--bg-fundo);
-    opacity: 1;
 }
 
 .btn-hamburguer span {
@@ -1057,8 +1224,8 @@ input:checked+.slider:before {
     right: 0;
     background: var(--bg-caixas);
     border: 1px solid var(--borda);
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-hover);
     min-width: 210px;
     z-index: 500;
     overflow: hidden;
@@ -1096,19 +1263,18 @@ input:checked+.slider:before {
 
 .dropdown-item:hover {
     background-color: var(--bg-fundo);
-    opacity: 1;
 }
 
 .dropdown-item.item-pdf {
-    color: #f44336;
+    color: var(--accent-danger);
 }
 
 .dropdown-item.item-pdf:hover {
-    background-color: #fff5f5;
+    background-color: rgba(192, 57, 43, 0.06);
 }
 
 body.dark-mode .dropdown-item.item-pdf:hover {
-    background-color: #3e1a1a;
+    background-color: rgba(231, 76, 60, 0.1);
 }
 
 .dropdown-divider {
@@ -1118,20 +1284,24 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 /* ==========================================
-   BOTTOM NAV MOBILE
+   NAV MOBILE
    ========================================== */
 .nav-mobile {
     display: none;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-caixas);
+    background: var(--bg-nav);
     border-top: 1px solid var(--borda);
     z-index: 200;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+
+body.dark-mode .nav-mobile {
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .nav-mobile-btn {
@@ -1169,16 +1339,470 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 .nav-mobile-btn.ativo {
-    color: #2196F3;
+    color: var(--accent-primary);
 }
 
-/* Classe para ocultar painéis na troca de abas mobile */
 .painel-mobile-oculto {
     display: none !important;
 }
 
 /* ==========================================
-   OBJETOS FLUTUANTES (Ingresso, Carta, Raspadinha)
+   PAINEL LATERAL — TAB SWITCHER
+   ========================================== */
+.painel-lateral-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-caixas);
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+}
+
+.tab-lateral-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 10px 4px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--texto-secundario);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    box-shadow: none;
+}
+
+.tab-lateral-btn:hover {
+    background: rgba(192, 117, 90, 0.06);
+    color: var(--texto-principal);
+    transform: none;
+    box-shadow: none;
+}
+
+.tab-lateral-btn.ativo {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background: var(--bg-fundo);
+}
+
+.tab-lateral-btn .tab-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-family: 'Inter', sans-serif;
+}
+
+.tab-conteudo {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* ==========================================
+   WATCHLIST (FILMES/SÉRIES)
+   ========================================== */
+.watchlist-card {
+    background: var(--bg-elevado);
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-md);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.watchlist-card:hover {
+    box-shadow: var(--sombra-hover);
+    transform: translateY(-2px);
+}
+
+.watchlist-card-foto {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--bg-fundo);
+    display: block;
+}
+
+.watchlist-card-foto-placeholder {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, var(--bg-fundo) 0%, var(--borda) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: var(--texto-secundario);
+    opacity: 0.5;
+}
+
+.watchlist-card-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.watchlist-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.watchlist-card-header h4 {
+    margin: 0;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--texto-principal);
+    flex: 1;
+    line-height: 1.3;
+}
+
+.watchlist-tipo-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+}
+
+.tipo-serie {
+    background: #e8d5f5;
+    color: #7b2ea8;
+}
+
+.tipo-filme {
+    background: #d5e8f5;
+    color: #2e6ea8;
+}
+
+body.dark-mode .tipo-serie {
+    background: #3d2852;
+    color: #c9a3e8;
+}
+
+body.dark-mode .tipo-filme {
+    background: #28394d;
+    color: #a3c9e8;
+}
+
+.watchlist-status-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.status-assistindo {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.status-quero {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #17a2b8;
+}
+
+.status-assistido {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #28a745;
+}
+
+body.dark-mode .status-assistindo {
+    background: #3d3520;
+    color: #ffc107;
+    border-color: #665a20;
+}
+
+body.dark-mode .status-quero {
+    background: #1a3038;
+    color: #5bc0de;
+    border-color: #2a4a54;
+}
+
+body.dark-mode .status-assistido {
+    background: #1a3320;
+    color: #5cb85c;
+    border-color: #2a5430;
+}
+
+.watchlist-rating {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+
+.watchlist-stars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.watchlist-star {
+    font-size: 18px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    filter: grayscale(100%) opacity(0.3);
+    user-select: none;
+}
+
+.watchlist-star:hover {
+    transform: scale(1.25);
+}
+
+.watchlist-star.preenchida {
+    filter: none;
+}
+
+.watchlist-avaliacoes {
+    font-size: 11px;
+    color: var(--texto-secundario);
+    margin-top: 2px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.watchlist-avaliacao-individual {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg-fundo);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+}
+
+.watchlist-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.filtro-watchlist.ativo,
+.filtro-watchlist-full.ativo {
+    background: var(--accent-secondary) !important;
+    color: white !important;
+    border-color: var(--accent-secondary) !important;
+}
+
+/* Três pontinhos */
+.watchlist-menu-wrapper {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20;
+}
+
+.watchlist-menu-btn {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    padding: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    line-height: 1;
+}
+
+.watchlist-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: none;
+}
+
+.watchlist-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--bg-caixas);
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--sombra-hover);
+    min-width: 150px;
+    overflow: hidden;
+    z-index: 30;
+    animation: fadeInDown 0.15s ease forwards;
+}
+
+.watchlist-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: var(--texto-principal);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    box-shadow: none;
+}
+
+.watchlist-menu-item:hover {
+    background: var(--bg-fundo);
+    transform: none;
+    box-shadow: none;
+}
+
+.watchlist-menu-item.danger {
+    color: var(--accent-danger);
+}
+
+/* Participantes no card */
+.watchlist-participantes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid var(--borda);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+.watchlist-participante-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--texto-secundario);
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+
+.watchlist-participante-row img {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--borda);
+}
+
+.watchlist-participante-row .nome-part {
+    font-weight: 600;
+    color: var(--texto-principal);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==========================================
+   WATCHLIST — TELA CHEIA
+   ========================================== */
+#telaWatchlist {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-fundo);
+    background-image: var(--textura);
+    z-index: 800;
+    overflow-y: auto;
+    animation: fadeInOverlay 0.2s ease;
+}
+
+.watchlist-fullscreen-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: var(--bg-caixas);
+    border-bottom: 1px solid var(--borda);
+    box-shadow: var(--sombra-card);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.watchlist-filtros-fullscreen {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.watchlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .watchlist-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .watchlist-card-foto,
+    .watchlist-card-foto-placeholder {
+        height: 120px;
+    }
+
+    .watchlist-fullscreen-header {
+        padding: 10px 12px;
+    }
+
+    .watchlist-fullscreen-header h1 {
+        font-size: 16px !important;
+    }
+
+    .watchlist-filtros-fullscreen {
+        gap: 3px;
+    }
+
+    .watchlist-filtros-fullscreen .btn-pequeno {
+        font-size: 10px;
+        padding: 4px 6px;
+    }
+
+    .painel-lateral-tabs {
+        border-radius: var(--radius-md);
+    }
+}
+
+/* ==========================================
+   OBJETOS FLUTUANTES
    ========================================== */
 .obj-flutuante {
     position: absolute;
@@ -1190,17 +1814,15 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     transform: rotate(var(--rot, 0deg));
     transition: filter 0.2s;
     cursor: grab;
-    /* <-- Adicione isto para a mãozinha aparecer! */
 }
 
 .obj-flutuante:active {
     cursor: grabbing;
-    /* <-- Adicione isto para a mãozinha fechar ao segurar! */
 }
 
 .obj-flutuante:hover {
     z-index: 20;
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
     transform: rotate(var(--rot, 0deg)) scale(1.03);
 }
 
@@ -1209,9 +1831,9 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: #fff;
     padding: 4px 14px;
     border-radius: 20px;
@@ -1234,17 +1856,18 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 
 .drag-handle:active {
     cursor: grabbing;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.85);
 }
 
-/* --- A CARTA (ENVELOPE ANIMADO) --- */
+/* ==========================================
+   CARTA (ENVELOPE ANIMADO)
+   ========================================== */
 .carta-container {
     width: 100%;
     aspect-ratio: 250 / 160;
     position: relative;
     perspective: 800px;
     container-type: inline-size;
-    /* A MÁGICA: Corta o excesso apenas na parte de baixo. O papel pode subir, mas nunca descer da base do envelope! */
     clip-path: polygon(-50% -200%, 150% -200%, 150% 100%, -50% 100%);
 }
 
@@ -1263,18 +1886,15 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     background: #e3d5b8;
     border-radius: 4px;
     z-index: 1 !important;
-    /* Camada 1: O Fundo */
 }
 
 .carta-papel {
     background: #fffdf8;
     width: 90%;
     height: 150%;
-    /* Bem longo para o fundo nunca aparecer */
     top: 5%;
     left: 5%;
     z-index: 2 !important;
-    /* Camada 2: O Papel (ESTRITAMENTE NO MEIO) */
     padding: 8%;
     box-sizing: border-box;
     font-family: 'Caveat', cursive;
@@ -1289,14 +1909,12 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 
 .envelope-frente {
     z-index: 3 !important;
-    /* Camada 3: A Frente (COBRE O PAPEL) */
     pointer-events: none;
-    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.1));
+    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.08));
 }
 
 .envelope-aba {
     z-index: 4 !important;
-    /* Camada 4: A Aba (Por cima de tudo quando fechada) */
     transform-origin: top;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.6s;
 }
@@ -1311,7 +1929,6 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     background: radial-gradient(#a00, #700);
     border-radius: 50%;
     z-index: 5 !important;
-    /* Camada 5: O Selo */
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 5px #500;
     transition: transform 0.3s, opacity 0.3s;
@@ -1331,19 +1948,15 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     transform: translate(-50%, -50%) scale(1.1);
 }
 
-/* --- O ESTADO ABERTO --- */
 .carta-container.aberta .envelope-aba {
     transform: rotateX(180deg);
     z-index: 1 !important;
-    /* A aba vai para trás do papel! */
 }
 
 .carta-container.aberta .carta-papel {
     transform: translateY(-30%);
-    /* O Papel sobe */
     z-index: 2 !important;
-    /* MAS CONTINUA ATRÁS DA FRENTE DO ENVELOPE */
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.12);
 }
 
 .carta-container.aberta .selo-cera {
@@ -1352,28 +1965,25 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     transform: translate(-50%, -50%) scale(0.5);
 }
 
-/* --- A RASPADINHA --- */
-/* --- A RASPADINHA --- */
+/* ==========================================
+   RASPADINHA
+   ========================================== */
 .raspadinha-container {
     width: 250px;
     height: 120px;
-    /* Tamanho fixo e seguro */
     background: #fff;
     padding: 16px;
-    /* A BORDA MAIS GROSSA E SEGURA PARA ARRASTAR AQUI! */
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     box-sizing: border-box;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border: 2px dashed #ccc;
     text-align: center;
     position: relative;
-    /* Removido o container-type que criava a barreira invisível! */
 }
 
 .raspadinha-texto {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 20px;
-    /* Tamanho fixado para não bugar */
     font-weight: bold;
     color: #e74c3c;
     width: 100%;
@@ -1390,10 +2000,8 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 .raspadinha-canvas {
     position: absolute;
     top: 16px;
-    /* Acompanha exatamente o padding para não invadir a borda de arraste */
     left: 16px;
     width: calc(100% - 32px);
-    /* Desconta o padding dos dois lados */
     height: calc(100% - 32px);
     border-radius: 4px;
     cursor: crosshair;
@@ -1402,41 +2010,73 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 }
 
 /* ==========================================
-   O SCROLL MOBILE PERFEITO (Mesa estática)
+   RESPONSIVE – SCROLL MOBILE
    ========================================== */
 @media (max-width: 768px) {
     .tela-app {
         overflow-x: hidden;
-        /* Trava o app inteiro para não sambar pros lados */
         padding-bottom: 75px;
     }
 
-    /* O painel do editor vira a "janela" por onde vemos a folha */
-    #painelEditor {
-        width: 100vw !important;
-        overflow-x: auto !important;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        /* Deslize suave no iOS */
-        padding-bottom: 20px;
-        scrollbar-width: none;
-        margin-left: -10px;
-        /* Compensa o padding lateral do body */
-    }
-
-    #painelEditor::-webkit-scrollbar {
-        display: none;
-    }
-
-    .folha-a4 {
-        min-width: 800px !important;
-        margin: 0 10px !important;
-    }
-
+    /* Header fixo no topo: evita deslocamento ao trocar página */
     .cabecalho-app {
-        flex-wrap: wrap;
+        position: sticky;
+        top: 0;
+        z-index: 150;
+        background: var(--bg-fundo);
+        background-image: var(--textura);
+        padding: 10px 0;
+        margin-bottom: 10px;
+        flex-wrap: nowrap;
         gap: 8px;
-        align-items: flex-start;
+        align-items: center;
+    }
+
+    .cabecalho-app>div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cabecalho-app>div:first-child h1 {
+        font-size: 18px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cabecalho-direito {
+        flex-shrink: 0;
+    }
+
+    /* Painel do editor: a folha se adapta à tela */
+    #painelEditor {
+        width: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: visible;
+        padding-bottom: 10px;
+    }
+
+    /* Folha A4: responsiva no mobile, sem scroll horizontal */
+    .folha-a4 {
+        min-width: unset !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 500px;
+        margin: 0 !important;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .editor-rico {
+        padding: 20px 16px !important;
+        font-size: 15px;
+        min-height: 400px;
+        overflow-y: auto !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
     .container {
@@ -1451,70 +2091,99 @@ body.dark-mode .dropdown-item.item-pdf:hover {
         width: 100%;
     }
 
+    /* Controles de edição */
     #controlesDeEdicao {
-        gap: 6px;
+        gap: 5px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 8px 4px;
+        background: var(--bg-caixas);
+        border-bottom: 1px solid var(--borda);
+        border-radius: var(--radius-sm);
+        margin-bottom: 8px;
     }
 
     #controlesDeEdicao button,
     #controlesDeEdicao label {
-        font-size: 12px;
-        padding: 6px 10px;
-    }
-
-    .controles-paginacao {
-        flex-wrap: wrap;
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .painel-humor {
-        gap: 5px;
+        font-size: 11px;
         padding: 5px 8px;
     }
 
-    .btn-humor {
-        font-size: 18px;
+    /* Paginação */
+    .controles-paginacao {
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+        padding: 8px 4px;
+        background: var(--bg-caixas);
+        border-top: 1px solid var(--borda);
+        border-radius: var(--radius-sm);
+        margin-top: 8px;
     }
 
+    .controles-paginacao button {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+
+    .controles-paginacao span {
+        font-size: 12px !important;
+    }
+
+    /* Painel de humor menor */
+    .painel-humor {
+        gap: 5px;
+        padding: 4px 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-humor {
+        font-size: 16px;
+    }
+
+    /* Stickers e polaroids */
     .polaroid {
-        max-width: 80% !important;
+        max-width: 85% !important;
+    }
+
+    .sticker {
+        font-size: 32px;
     }
 
     .nav-mobile {
         display: grid;
     }
 
-    /* Gruda os controles no topo e no rodapé para não fugirem no scroll horizontal */
-    #controlesDeEdicao,
-    .controles-paginacao {
-        position: sticky;
-        left: 0;
-        width: 100vw;
-        background: var(--bg-caixas);
-        /* Fundo sólido para o texto não vazar por baixo */
-        z-index: 100;
-        box-sizing: border-box;
-        padding: 10px 5px;
-        border-bottom: 1px solid var(--borda);
-    }
-
-    .controles-paginacao {
-        border-bottom: none;
-        border-top: 1px solid var(--borda);
-    }
-
     #menuStickers {
-        position: sticky;
-        left: 10px;
-        width: calc(100vw - 20px);
+        width: 100%;
         z-index: 101;
+        box-sizing: border-box;
+    }
+
+    /* Objetos flutuantes: escala reduzida no mobile */
+    .obj-flutuante {
+        max-width: 65% !important;
+    }
+
+    /* Modais no mobile */
+    .modal-conteudo {
+        max-height: 80vh;
+        padding: 20px 16px;
+        width: 95%;
+    }
+
+    /* Esconde "visto por último" no mobile para economizar espaço */
+    #vistoPorUltimo {
+        display: none;
     }
 }
 
-/* --- A FITA CASSETE (MIXTAPE VIBE) --- */
+/* ==========================================
+   FITA CASSETE
+   ========================================== */
 .fita-cassete {
     position: relative;
-    /* Container âncora */
     display: inline-block;
     cursor: pointer;
     background: transparent;
@@ -1522,7 +2191,6 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Inclinação analógica na página */
 .fita-cassete:nth-child(even) {
     transform: rotate(-1.5deg);
 }
@@ -1536,7 +2204,6 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     z-index: 10;
 }
 
-/* Título imitando escrita à mão com caneta na etiqueta de papel */
 .fita-titulo {
     position: absolute;
     top: 14%;
@@ -1552,18 +2219,10 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     white-space: nowrap;
     overflow: hidden;
     cursor: text;
-
-    /* A mágica da legibilidade: Contorno preto sólido na fonte */
     -webkit-text-stroke: 0.5px #000000;
-
-    /* Uma sombra extra atrás do contorno para dar profundidade (efeito 3D) */
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
-/* Modifica o player HTML5 padrão para se camuflar no plástico escuro da fita */
-/* ==========================================
-   ESTILIZAÇÃO DO PLAYER DA FITA CASSETE
-   ========================================== */
 .fita-player {
     position: absolute;
     bottom: 9%;
@@ -1573,7 +2232,6 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     border-radius: 14px;
     opacity: 0.8;
     transition: opacity 0.3s, filter 0.3s;
-    /* Um filtro mais suave que mantém a vibe analógica sem estragar as cores novas */
     filter: sepia(0.3) contrast(1.1) brightness(0.9);
     outline: none;
 }
@@ -1585,10 +2243,8 @@ body.dark-mode .dropdown-item.item-pdf:hover {
     filter: sepia(0) contrast(1) brightness(1);
 }
 
-/* --- A MÁGICA: Hackeando o visual nativo (WebKit) --- */
 .fita-player::-webkit-media-controls-panel {
     background-color: #2c2c2c;
-    /* Fundo escuro igual às engrenagens da fita */
     border-radius: 14px;
     padding: 0 5px;
 }
@@ -1596,17 +2252,14 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 .fita-player::-webkit-media-controls-play-button,
 .fita-player::-webkit-media-controls-mute-button {
     background-color: #d35400;
-    /* Laranja exato da etiqueta da fita */
     border-radius: 50%;
     transform: scale(0.85);
-    /* Deixa os botões mais delicados */
 }
 
 .fita-player::-webkit-media-controls-current-time-display,
 .fita-player::-webkit-media-controls-time-remaining-display {
     color: #fdfbf7;
     font-family: 'Courier Prime', monospace;
-    /* Fonte de máquina de escrever para os números! */
     font-size: 11px;
     text-shadow: none;
 }
@@ -1619,11 +2272,10 @@ body.dark-mode .dropdown-item.item-pdf:hover {
 
 body.dark-mode .fita-cassete {
     background: transparent;
-    /* Mantém transparente no modo escuro */
 }
 
 /* ==========================================
-   MODO LANTERNA (Foco Total)
+   MODO LANTERNA
    ========================================== */
 body.modo-lanterna {
     background-color: #050505 !important;
@@ -1642,11 +2294,8 @@ body.modo-lanterna::before {
     z-index: 900;
 }
 
-/* Escurece APENAS os itens secundários, poupando o Menu e a Paginação */
 body.modo-lanterna .tela-app>.cabecalho-app>div:first-child,
-/* Título e Humor */
 body.modo-lanterna .area-presenca,
-/* Avatares */
 body.modo-lanterna #painelLateral,
 body.modo-lanterna .nav-mobile,
 body.modo-lanterna #controlesDeEdicao {
@@ -1654,7 +2303,6 @@ body.modo-lanterna #controlesDeEdicao {
     transition: opacity 0.3s ease;
 }
 
-/* Hover acende as partes escuras */
 body.modo-lanterna .tela-app>.cabecalho-app>div:first-child:hover,
 body.modo-lanterna .area-presenca:hover,
 body.modo-lanterna #painelLateral:hover,
@@ -1663,67 +2311,45 @@ body.modo-lanterna #controlesDeEdicao:hover {
     opacity: 1;
 }
 
-/* ELEVA O MENU E A PAGINAÇÃO PARA A LUZ */
 body.modo-lanterna .menu-hamburguer-wrapper,
 body.modo-lanterna .controles-paginacao,
 body.modo-lanterna .folha-a4 {
     z-index: 901;
-    /* Ficam acima da sombra do ::before */
     position: relative;
 }
 
 body.modo-lanterna .folha-a4 {
-    box-shadow: 0 0 50px rgba(255, 255, 200, 0.15) !important;
+    box-shadow: 0 0 50px rgba(255, 255, 200, 0.12) !important;
 }
 
 /* ==========================================
-   O INGRESSO (TICKET STUB LIVRE)
+   INGRESSO (TICKET)
    ========================================== */
 .ingresso-card {
-    /* Agora ele é absoluto para flutuar pela página */
     position: absolute;
     display: inline-block;
     background: transparent;
     padding: 0;
     margin: 0;
     z-index: 15;
-    transition: filter 0.2s;
-}
-
-.ingresso-card:hover {
-    z-index: 20;
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
-}
-
-/* A Alça de Arrasto (Só aparece quando passa o mouse) */
-.ingresso-card {
-    position: absolute;
-    display: inline-block;
-    background: transparent;
-    padding: 0;
-    margin: 0;
-    z-index: 15;
-    /* Usando variável CSS para não perder a rotação durante o Hover! */
     transform: rotate(var(--rot, 0deg));
     transition: filter 0.2s;
 }
 
 .ingresso-card:hover {
     z-index: 20;
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
     transform: rotate(var(--rot, 0deg)) scale(1.03);
-    /* Mantém o ângulo e dá um leve zoom */
 }
 
-/* Alça sutil e elegante, no topo do ingresso */
 .ingresso-drag-handle {
     position: absolute;
     top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: #fff;
     padding: 4px 14px;
     border-radius: 20px;
@@ -1738,7 +2364,6 @@ body.modo-lanterna .folha-a4 {
 
 .ingresso-drag-handle::before {
     content: '⠿';
-    /* Ícone minimalista de arrastar */
     margin-right: 6px;
     opacity: 0.7;
 }
@@ -1749,7 +2374,7 @@ body.modo-lanterna .folha-a4 {
 
 .ingresso-drag-handle:active {
     cursor: grabbing;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.85);
 }
 
 .ingresso-texto {
@@ -1762,7 +2387,6 @@ body.modo-lanterna .folha-a4 {
     cursor: text;
 }
 
-/* Textos ajustados ao SVG */
 .ingresso-evento {
     top: 25%;
     left: 10%;
@@ -1792,19 +2416,19 @@ body.dark-mode .ingresso-texto {
     color: #111;
 }
 
-/* --- ESTILOS PARA ARRASTO DE TAREFAS --- */
+/* ==========================================
+   ARRASTO DE TAREFAS
+   ========================================== */
 .tarefa-item {
     transition: background 0.2s, transform 0.2s;
     user-select: none;
-    /* Evita selecionar o texto sem querer ao segurar */
     touch-action: pan-y;
-    /* Permite scroll da tela, mas não interfere no arrasto */
 }
 
 .tarefa-pronta-arrasto {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.04);
     transform: scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     z-index: 100;
     position: relative;
     border-radius: 4px;
@@ -1815,17 +2439,19 @@ body.dark-mode .ingresso-texto {
     border: 2px dashed var(--borda);
 }
 
-/* Customização da barra de rolagem da Carta Aberta */
+/* Scrollbar da carta aberta */
 #conteudoLeituraCarta::-webkit-scrollbar {
     width: 6px;
 }
 
 #conteudoLeituraCarta::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.15);
     border-radius: 4px;
 }
 
-/* --- GRADE 2x2 PARA OS BOTÕES STICKERS ESPECIAIS --- */
+/* ==========================================
+   GRID DE OBJETOS ESPECIAIS
+   ========================================== */
 .grid-botoes-objetos {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1843,17 +2469,17 @@ body.dark-mode .ingresso-texto {
     padding: 8px 4px;
 }
 
-/* --- POST-IT MARGINAL --- */
+/* ==========================================
+   POST-IT
+   ========================================== */
 .postit-objeto {
     width: 160px;
     height: 160px;
     padding: 15px;
     box-sizing: border-box;
     background: #feff9c;
-    /* Amarelo clássico */
-    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.2), inset 0 -15px 15px rgba(0, 0, 0, 0.03);
+    box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.15), inset 0 -15px 15px rgba(0, 0, 0, 0.03);
     border-bottom-right-radius: 20px 5px;
-    /* Efeito de ponta dobrada */
 }
 
 .postit-texto {
@@ -1872,7 +2498,7 @@ body.dark-mode .postit-objeto {
 }
 
 /* ==========================================
-   O POTE DE PERGUNTAS (Card de Diálogo)
+   CARD PERGUNTA
    ========================================== */
 .card-pergunta {
     position: relative;
@@ -1880,27 +2506,25 @@ body.dark-mode .postit-objeto {
     background: #fff;
     padding: 5%;
     box-sizing: border-box;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 0 0 2px #3498db;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 0 0 2px var(--accent-secondary);
     text-align: center;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
-    /* MÁGICA: O card vira referência de tamanho para a fonte */
     container-type: inline-size;
 }
 
 .card-pergunta:hover {
     transform: scale(1.02);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
     z-index: 10;
 }
 
 .card-pergunta::before {
     content: '💭 Puxando Assunto...';
     font-size: 4cqw;
-    /* A fonte se adapta à largura do card */
     font-weight: bold;
-    color: #3498db;
+    color: var(--accent-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
     display: block;
@@ -1910,7 +2534,6 @@ body.dark-mode .postit-objeto {
 .pergunta-texto {
     font-family: 'Lora', serif;
     font-size: 7.5cqw;
-    /* A fonte do texto se adapta perfeitamente */
     color: #333;
     font-style: italic;
     line-height: 1.4;
@@ -1918,14 +2541,12 @@ body.dark-mode .postit-objeto {
 }
 
 /* ==========================================
-   CURSORES COMPARTILHADOS (Efeito Figma)
+   CURSORES COMPARTILHADOS (Figma)
    ========================================== */
 .cursor-alheio {
     position: absolute;
     pointer-events: none;
-    /* Para não atrapalhar seus cliques! */
     z-index: 9999;
-    /* A mágica que faz o movimento ficar fluido, mesmo com delay da internet: */
     transition: transform 0.1s linear;
     display: flex;
     flex-direction: column;
@@ -1937,21 +2558,20 @@ body.dark-mode .postit-objeto {
     width: 20px;
     height: 20px;
     transform: rotate(-15deg);
-    /* Posição clássica de cursor de mouse */
 }
 
 .cursor-nome {
-    background: #e91e63;
-    /* Rosa pink destacado */
+    background: var(--accent-primary);
     color: white;
     font-size: 10px;
     font-weight: bold;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 10px;
     border-top-left-radius: 0;
     margin-top: -2px;
     margin-left: 10px;
     white-space: nowrap;
+    font-family: 'Inter', sans-serif;
 }
 
 /* ==========================================
@@ -1959,7 +2579,6 @@ body.dark-mode .postit-objeto {
    ========================================== */
 .carimbo-objeto {
     width: 100%;
-    /* ele obedece o redimensionamento do pai */
     height: 100%;
     aspect-ratio: 1 / 1;
     border-radius: 50%;
@@ -1980,7 +2599,6 @@ body.dark-mode .postit-objeto {
 
 .carimbo-local {
     font-size: 12cqw;
-    /* cqw = Container Query Width (Cresce junto com o pai) */
     font-weight: bold;
     line-height: 1.1;
     margin-bottom: 2cqw;
@@ -2006,7 +2624,7 @@ body.dark-mode .carimbo-objeto {
 }
 
 /* ==========================================
-   NOTIFICAÇÕES TOAST (Alertas Elegantes)
+   TOAST NOTIFICATIONS (Glassmorphism)
    ========================================== */
 .toast-container {
     position: fixed;
@@ -2023,39 +2641,39 @@ body.dark-mode .carimbo-objeto {
     background: var(--bg-caixas);
     color: var(--texto-principal);
     padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-hover);
     border: 1px solid var(--borda);
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 600;
     transform: translateX(120%);
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     gap: 10px;
+    font-family: 'Inter', sans-serif;
 }
 
 .toast.show {
     transform: translateX(0);
 }
 
-/* Efeito para a ferramenta de desenho selecionada */
+/* ==========================================
+   FERRAMENTAS DE DESENHO
+   ========================================== */
 .btn-ferramenta.ativo {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.15);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
 }
 
-/* ==========================================
-   ESTILO DA PALETA DE CORES (MODO DESENHO)
-   ========================================== */
 #inputCorDesenho {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
     width: 30px;
     height: 30px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     border-radius: 50%;
     background-color: transparent;
     cursor: pointer;
@@ -2066,7 +2684,7 @@ body.dark-mode .carimbo-objeto {
 
 #inputCorDesenho:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 #inputCorDesenho::-webkit-color-swatch-wrapper {
@@ -2078,16 +2696,12 @@ body.dark-mode .carimbo-objeto {
     border-radius: 50%;
 }
 
-/* ==========================================
-   BARRA DE DESENHO (PÍLULA) - PC E MOBILE
-   ========================================== */
 #toolbarDesenho {
     position: fixed;
     bottom: 30px;
     top: auto;
     left: 50%;
     transform: translateX(-50%) scale(1);
-    /* O scale 1 aqui é o estado visível */
     z-index: 3000;
     padding: 10px 20px;
     border-radius: 40px;
@@ -2096,7 +2710,6 @@ body.dark-mode .carimbo-objeto {
     display: flex;
 }
 
-/* Quando escondida, ela some suavemente para baixo */
 #toolbarDesenho.escondido {
     transform: translateX(-50%) scale(0.8);
     opacity: 0;
@@ -2107,22 +2720,18 @@ body.dark-mode .carimbo-objeto {
     height: 24px;
 }
 
-/* A ADAPTAÇÃO PARA O CELULAR (Magia de UI) */
 @media (max-width: 768px) {
     #toolbarDesenho {
         bottom: 85px;
-        /* Sobe a barra para não ficar em cima do menu nav-mobile! */
         padding: 6px 12px;
         gap: 6px;
         width: 92%;
-        /* Impede que corte nas laterais do celular */
         justify-content: space-between;
         border-radius: 20px;
     }
 
     #toolbarDesenho .btn-ferramenta {
         font-size: 16px;
-        /* Emojis menores */
         padding: 4px;
     }
 
@@ -2141,7 +2750,9 @@ body.dark-mode .carimbo-objeto {
     }
 }
 
-/* Balãozinho de "Digitando..." */
+/* ==========================================
+   INDICADOR DE DIGITANDO
+   ========================================== */
 .status-digitando {
     position: absolute;
     top: -10px;
@@ -2150,7 +2761,7 @@ body.dark-mode .carimbo-objeto {
     border-radius: 50%;
     padding: 2px;
     font-size: 12px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     animation: pulsarDigitando 1s infinite alternate;
     z-index: 15;
 }
@@ -2165,13 +2776,13 @@ body.dark-mode .carimbo-objeto {
     }
 }
 
-/* --- LIMPEZA VISUAL E BLOQUEIO DO MODO LEITURA --- */
+/* ==========================================
+   MODO LEITURA (Bloqueios)
+   ========================================== */
 .modo-leitura-ativo .drag-handle {
     display: none !important;
-    /* Some com as alças de arrasto */
 }
 
-/* Trava todos os sub-textos editáveis para não abrirem o teclado */
 .modo-leitura-ativo .polaroid-legenda,
 .modo-leitura-ativo .ingresso-texto,
 .modo-leitura-ativo .fita-titulo,
@@ -2179,10 +2790,8 @@ body.dark-mode .carimbo-objeto {
 .modo-leitura-ativo .postit-texto {
     pointer-events: none !important;
     user-select: text !important;
-    /* Permite apenas selecionar para copiar, mas não editar */
 }
 
-/* Impede o hover e cliques nos objetos, tirando a mãozinha */
 .modo-leitura-ativo .obj-flutuante,
 .modo-leitura-ativo .sticker,
 .modo-leitura-ativo .polaroid,
@@ -2190,37 +2799,33 @@ body.dark-mode .carimbo-objeto {
     cursor: default !important;
 }
 
-/* Exceção vital: O selo da carta e a raspadinha AINDA precisam receber cliques! */
 .modo-leitura-ativo .selo-cera,
 .modo-leitura-ativo .raspadinha-canvas {
     pointer-events: auto !important;
 }
 
 /* ==========================================
-   TRAVAS DA PÁGINA (Impedir Crescimento Horizontal)
+   TRAVAS DE PÁGINA
    ========================================== */
 .folha-a4 {
     overflow-x: hidden !important;
-    /* Esconde qualquer coisa que tente vazar pro lado */
     max-width: 100%;
-    /* Trava o crescimento do elemento na tela */
 }
 
-/* Força textos gigantes (como links sem espaço) a quebrarem de linha, respeitando a margem */
 .folha-a4 * {
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
 /* ==========================================
-   BOTÃO DE EDITAR INGRESSO (Lapisinho)
+   BOTÃO EDITAR INGRESSO
    ========================================== */
 .btn-editar-ingresso {
     position: absolute;
     top: -10px;
     right: -10px;
-    background: #fff;
-    border: 2px solid #ccc;
+    background: var(--bg-elevado);
+    border: 2px solid var(--borda);
     border-radius: 50%;
     width: 32px;
     height: 32px;
@@ -2230,27 +2835,143 @@ body.dark-mode .carimbo-objeto {
     font-size: 14px;
     cursor: pointer;
     z-index: 20;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     transition: transform 0.2s, border-color 0.2s;
 }
 
 .btn-editar-ingresso:hover {
     transform: scale(1.15) rotate(10deg);
-    border-color: #f44336;
+    border-color: var(--accent-primary);
 }
 
-/* Força o navegador a entender que estes itens são "arrastáveis" */
+/* ==========================================
+   DRAG & DROP NATIVO
+   ========================================== */
 .polaroid,
 .fita-cassete,
 .card-pergunta {
     -webkit-user-drag: element;
     cursor: grab;
     vertical-align: top;
-    /* A MÁGICA 2: Faz o texto iniciar no topo do objeto, e não no rodapé! */
 }
 
 .polaroid:active,
 .fita-cassete:active,
 .card-pergunta:active {
     cursor: grabbing;
+}
+
+/* ==========================================
+   INDICADOR DE SALVAMENTO
+   ========================================== */
+.save-status {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--bg-nav);
+    color: var(--texto-secundario);
+    border: 1px solid var(--borda);
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+
+.save-status.escondido {
+    opacity: 0;
+}
+
+/* ==========================================
+   ANIMAÇÕES
+   ========================================== */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-2deg);
+    }
+
+    50% {
+        transform: rotate(2deg);
+    }
+
+    75% {
+        transform: rotate(-2deg);
+    }
+}
+
+.shake-animation {
+    animation: shake 0.4s ease-in-out;
+}
+
+.card-pop-in {
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ==========================================
+   WATCHLIST DROPDOWN
+   ========================================== */
+.watchlist-menu-dropdown {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background: var(--bg-caixas);
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-modal);
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+    z-index: 1000;
+    min-width: 140px;
+    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.watchlist-menu-item {
+    background: transparent;
+    border: none;
+    padding: 10px 15px;
+    text-align: left;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--texto-principal);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.watchlist-menu-item:hover {
+    background: var(--bg-fundo);
+}
+
+.watchlist-menu-item.danger {
+    color: var(--accent-danger);
+}
+
+.watchlist-menu-item.danger:hover {
+    background: rgba(231, 76, 60, 0.1);
 }
