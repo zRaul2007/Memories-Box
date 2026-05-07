@@ -26,7 +26,7 @@ let usuariosDb = {};
 onValue(ref(database, 'usuarios'), (snapshot) => { usuariosDb = snapshot.val() || {}; });
 let camadaGlobalZIndex = 50;
 let tarefaSendoEditadaId = null; let tarefaSendoApagadaId = null;
-let escutaAnotacoes, escutaTarefas, escutaStickers, escutaDesenhos, escutaTotalPaginas, escutaPresenca, escutaAmei, escutaConfigCaderno;
+let escutaAnotacoes, escutaTarefas, escutaStickers, escutaDesenhos, escutaTotalPaginas, escutaPresenca, escutaAmei, escutaConfigCaderno, escutaWatchlist;
 let refMinhaPresenca = null;
 let modoLeituraAtivo = false; // Controle estilo Obsidian para evitar toques acidentais no mobile durante a leitura
 
@@ -40,9 +40,15 @@ const canvasDesenho = document.getElementById('camadaDesenho');
 const ctxDesenho = canvasDesenho ? canvasDesenho.getContext('2d') : null;
 
 
-// ==========================================
-// 1. MOTOR DE SEGURANÇA (ANTI-XSS)
-// ==========================================
+function obfuscatePIN(pin) {
+    return btoa(pin + "_salt_memories");
+}
+
+function deobfuscatePIN(obfuscated) {
+    try {
+        return atob(obfuscated).replace("_salt_memories", "");
+    } catch (e) { return ""; }
+}
 function sanitizarHTML(htmlBruto) {
     if (!htmlBruto) return "";
     try {
@@ -65,9 +71,10 @@ function sanitizarHTML(htmlBruto) {
         return doc.body.innerHTML;
     } catch (e) {
         console.error("Erro ao sanitizar HTML:", e);
-        return htmlBruto; // Fallback
+        return ""; // Fallback seguro: retorna vazio em vez de HTML não sanitizado
     }
 }
+
 
 // --- NOVO: SISTEMA DE ALERTAS (TOAST) ---
 window.mostrarToast = (mensagem, icone = '✅') => {
@@ -95,24 +102,19 @@ window.mostrarToast = (mensagem, icone = '✅') => {
 // --- SISTEMA DE NOTIFICAÇÕES INTELIGENTES E PWA ---
 let meuUltimoUpdate = 0; // Flag anti-spam
 
-// Pede permissão ao navegador
-if (Notification.permission === 'default') {
+// Pede permissão ao navegador (Com trava de segurança contra crash)
+if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
 }
 
 // Dispara só se a pessoa estiver FORA da aba e não for ela que editou!
 const notificarNovoConteudo = (mensagem) => {
-    if (document.hidden && Notification.permission === 'granted' && (Date.now() - meuUltimoUpdate > 5000)) {
+    if ('Notification' in window && document.hidden && Notification.permission === 'granted' && (Date.now() - meuUltimoUpdate > 5000)) {
         new Notification("Memories Box 📓", { body: mensagem, icon: 'https://cdn-icons-png.flaticon.com/512/3238/3238015.png' });
     }
 };
 
-// Avisa o Anti-Spam sempre que VOCÊ salva algo
-const salvarTextoFirebaseBase = salvarTextoFirebase; // Guarda a original
-window.salvarTextoFirebase = function () {
-    meuUltimoUpdate = Date.now();
-    salvarTextoFirebaseBase();
-};
+// Anti-spam integrado diretamente na função salvarTextoFirebase()
 
 // ==========================================
 // COMPRESSOR DE IMAGENS (Usado no Upload de Fotos de Perfil e Imagens nas Páginas)
@@ -233,24 +235,48 @@ dropdownMenu?.addEventListener('click', (e) => {
 // ==========================================
 // BOTTOM NAV MOBILE
 // ==========================================
+// ==========================================
+// SISTEMA DE ABAS LATERAIS (DESKTOP) + NAV MOBILE
+// ==========================================
+let tabLateralAtiva = 'musica';
+
+function trocarTabLateral(tab) {
+    tabLateralAtiva = tab;
+    // Atualiza botões das abas
+    document.querySelectorAll('.tab-lateral-btn').forEach(b => {
+        b.classList.toggle('ativo', b.getAttribute('data-tab') === tab);
+    });
+    // Esconde todos os conteúdos de aba
+    document.querySelectorAll('.tab-conteudo').forEach(c => {
+        c.classList.add('escondido');
+    });
+    // Mostra apenas o selecionado
+    const alvo = document.querySelector(`[data-tab-conteudo="${tab}"]`);
+    if (alvo) alvo.classList.remove('escondido');
+}
+
+// Listeners das abas desktop
+document.querySelectorAll('.tab-lateral-btn').forEach(btn => {
+    btn.addEventListener('click', () => trocarTabLateral(btn.getAttribute('data-tab')));
+});
+
 function trocarPainelMobile(painel) {
     const painelEditor = document.getElementById('painelEditor');
     const painelLateral = document.getElementById('painelLateral');
-    const containerMusica = document.getElementById('containerMusica');
-    const containerPlanos = document.getElementById('containerPlanos');
-    const containerContagem = document.getElementById('containerContagem');
+
+    // Reset de toolbars para evitar "ghost toolbars" ao trocar de painel
+    toolbarFlutuante.classList.add('escondido');
+    toolbarImagem.classList.add('escondido');
+    toolbarSticker.classList.add('escondido');
+    document.getElementById('toolbarObjeto')?.classList.add('escondido');
 
     document.querySelectorAll('.nav-mobile-btn').forEach(b => {
         b.classList.toggle('ativo', b.getAttribute('data-painel') === painel);
     });
 
     if (window.innerWidth > 768) {
-        // Desktop: garante que nada fique escondido por erro
         painelEditor?.classList.remove('painel-mobile-oculto');
         painelLateral?.classList.remove('painel-mobile-oculto');
-        containerMusica?.classList.remove('painel-mobile-oculto');
-        containerPlanos?.classList.remove('painel-mobile-oculto');
-        containerContagem?.classList.remove('painel-mobile-oculto');
         return;
     }
 
@@ -260,16 +286,9 @@ function trocarPainelMobile(painel) {
     } else {
         painelEditor?.classList.add('painel-mobile-oculto');
         painelLateral?.classList.remove('painel-mobile-oculto');
-
-        // Esconde todos os componentes do painel lateral primeiro
-        containerMusica?.classList.add('painel-mobile-oculto');
-        containerPlanos?.classList.add('painel-mobile-oculto');
-        containerContagem?.classList.add('painel-mobile-oculto');
-
-        // Mostra só o que foi selecionado
-        if (painel === 'musica') containerMusica?.classList.remove('painel-mobile-oculto');
-        if (painel === 'planos') containerPlanos?.classList.remove('painel-mobile-oculto');
-        if (painel === 'contagem') containerContagem?.classList.remove('painel-mobile-oculto');
+        // Mapeia painéis mobile para abas laterais
+        const mapMobile = { musica: 'musica', watchlist: 'watchlist', planos: 'planos', contagem: 'contagem' };
+        if (mapMobile[painel]) trocarTabLateral(mapMobile[painel]);
     }
 }
 
@@ -323,10 +342,90 @@ document.getElementById('btnAlterarSenhaEmail')?.addEventListener('click', () =>
 });
 
 // ==========================================
-// 3. LOGIN E ESTADO DO USUÁRIO
+// 3. LOGIN, CADASTRO E ESTADO DO USUÁRIO
 // ==========================================
-document.getElementById('btnCadastrar')?.addEventListener('click', () => createUserWithEmailAndPassword(auth, document.getElementById('inputEmail').value, document.getElementById('inputSenha').value).catch(e => document.getElementById('mensagemLogin').innerText = e.message));
-document.getElementById('btnEntrar')?.addEventListener('click', () => signInWithEmailAndPassword(auth, document.getElementById('inputEmail').value, document.getElementById('inputSenha').value).catch(() => document.getElementById('mensagemLogin').innerText = "Dados incorretos."));
+const btnEntrar = document.getElementById('btnEntrar');
+const btnCadastrar = document.getElementById('btnCadastrar');
+const inputEmail = document.getElementById('inputEmail');
+const inputSenha = document.getElementById('inputSenha');
+const mensagemLogin = document.getElementById('mensagemLogin');
+
+// --- Função Organizada de Login ---
+const realizarLogin = () => {
+    const email = inputEmail.value.trim();
+    const senha = inputSenha.value;
+
+    if (!email || !senha) {
+        mensagemLogin.innerText = "Por favor, preencha o e-mail e a senha.";
+        return;
+    }
+
+    // Feedback Visual: Avisa o usuário que o sistema está trabalhando
+    btnEntrar.innerText = "Entrando...";
+    btnEntrar.disabled = true;
+    mensagemLogin.innerText = "";
+
+    signInWithEmailAndPassword(auth, email, senha)
+        .then(() => {
+            // O sucesso é lidado pelo onAuthStateChanged logo abaixo
+            btnEntrar.innerText = "Entrar";
+            btnEntrar.disabled = false;
+        })
+        .catch((erro) => {
+            // Se der erro, devolvemos o botão ao estado original e avisamos
+            btnEntrar.innerText = "Entrar";
+            btnEntrar.disabled = false;
+            mensagemLogin.innerText = "E-mail ou senha incorretos.";
+            console.error("Erro no login:", erro);
+        });
+};
+
+// --- Função Organizada de Cadastro ---
+const realizarCadastro = () => {
+    const email = inputEmail.value.trim();
+    const senha = inputSenha.value;
+
+    if (!email || !senha) {
+        mensagemLogin.innerText = "Preencha e-mail e senha para criar a conta.";
+        return;
+    }
+
+    btnCadastrar.innerText = "Criando...";
+    btnCadastrar.disabled = true;
+    mensagemLogin.innerText = "";
+
+    createUserWithEmailAndPassword(auth, email, senha)
+        .then(() => {
+            btnCadastrar.innerText = "Criar Conta";
+            btnCadastrar.disabled = false;
+        })
+        .catch(e => {
+            btnCadastrar.innerText = "Criar Conta";
+            btnCadastrar.disabled = false;
+
+            // Traduzindo os erros mais comuns do Firebase
+            if (e.code === 'auth/email-already-in-use') {
+                mensagemLogin.innerText = "Este e-mail já possui uma conta.";
+            } else if (e.code === 'auth/weak-password') {
+                mensagemLogin.innerText = "A senha deve ter pelo menos 6 caracteres.";
+            } else {
+                mensagemLogin.innerText = "Erro ao criar conta. Verifique seus dados.";
+            }
+        });
+};
+
+// Adiciona os eventos de clique nos botões
+btnEntrar?.addEventListener('click', realizarLogin);
+btnCadastrar?.addEventListener('click', realizarCadastro);
+
+// Melhora a Usabilidade: Permite usar a tecla "Enter" para avançar e logar
+inputEmail?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') inputSenha.focus(); // Pula para a senha
+});
+
+inputSenha?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') realizarLogin(); // Tenta logar
+});
 document.getElementById('btnSairDash')?.addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, async (usuarioLogado) => {
@@ -342,7 +441,7 @@ onAuthStateChanged(auth, async (usuarioLogado) => {
                 nomeExibicaoAtual = usuarioAtual.email.split('@')[0];
                 await set(ref(database, `usuarios/${usuarioAtual.uid}`), { email: usuarioAtual.email, nome: nomeExibicaoAtual, fotoPerfil: AVATAR_PADRAO });
             }
-        } catch (erro) { alert("Erro ao conectar."); return; }
+        } catch (erro) { if (window.mostrarToast) window.mostrarToast("Erro ao conectar ao servidor.", "❌"); return; }
 
         telaLogin.classList.add('escondido'); telaApp.classList.add('escondido'); telaDashboard.classList.remove('escondido');
         document.getElementById('infoUsuarioDash').innerText = `${nomeExibicaoAtual}`;
@@ -364,7 +463,7 @@ function vigiarConvites() {
             snapshot.forEach((filho) => {
                 const idConvite = filho.key; const dados = filho.val(); const li = document.createElement('li');
                 li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.alignItems = "center"; li.style.marginBottom = "8px"; li.style.border = "none";
-                li.innerHTML = `<span style="font-size: 14px; color: #333;"><strong>${dados.remetenteNome}</strong> te convidou como <b>${dados.permissao.toUpperCase()}</b> para <em>"${dados.tituloCaderno}"</em></span>`;
+                li.innerHTML = `<span style="font-size: 14px; color: var(--texto-principal);"><strong>${dados.remetenteNome}</strong> te convidou como <b>${dados.permissao.toUpperCase()}</b> para <em>"${dados.tituloCaderno}"</em></span>`;
                 const botoes = document.createElement('div');
                 const btnAceitar = document.createElement('button'); btnAceitar.innerText = "✔️ Aceitar"; btnAceitar.className = "btn-pequeno"; btnAceitar.style.backgroundColor = "#4CAF50"; btnAceitar.style.color = "white";
                 const btnRecusar = document.createElement('button'); btnRecusar.innerText = "❌ Recusar"; btnRecusar.className = "btn-pequeno btn-sair";
@@ -392,6 +491,7 @@ document.getElementById('btnCriarCaderno')?.addEventListener('click', () => {
         document.getElementById('inputNovoCaderno').value = '';
     }
 });
+document.getElementById('inputNovoCaderno')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnCriarCaderno')?.click(); });
 
 function carregarCadernos() {
     onValue(ref(database, 'cadernos'), (snapshot) => {
@@ -425,10 +525,11 @@ document.getElementById('btnVoltarDash')?.addEventListener('click', () => {
     if (escutaPresenca) escutaPresenca();
     if (escutaAmei) escutaAmei();
     if (escutaConfigCaderno) escutaConfigCaderno();
+    if (escutaWatchlist) escutaWatchlist();
 
     cadernoAtualId = null;
-    document.getElementById('containerMusica').classList.add('escondido');
     document.getElementById('widgetMusica').innerHTML = '';
+    document.getElementById('telaWatchlist').classList.add('escondido');
 
     // Limpeza de cache visual de garantia
     if (folhaA4Wrapper) folhaA4Wrapper.className = 'folha-a4 fonte-padrao fundo-limpo';
@@ -445,7 +546,6 @@ async function abrirCaderno(id, titulo, permissao) {
         let senhaCorreta = false;
 
         while (!senhaCorreta) {
-            // Cria uma promessa que pausa o código até o usuário clicar num botão do Modal
             const tentativa = await new Promise((resolve) => {
                 const modal = document.getElementById('modalAcessoCaderno');
                 const input = document.getElementById('inputTentativaSenha');
@@ -472,20 +572,16 @@ async function abrirCaderno(id, titulo, permissao) {
                 input.addEventListener('keypress', onEnter);
             });
 
-            // Se o usuário clicou em Cancelar, aborta tudo e volta pro Dashboard
             if (tentativa === null) return;
 
-            // Verifica a senha
-            if (tentativa === config.pin) {
+            // Verifica a senha usando a função de obfuscation
+            if (obfuscatePIN(tentativa) === config.pin) {
                 senhaCorreta = true;
             } else {
-                // Se errou, pausa o código de novo mostrando o Modal de Erro
                 await new Promise((resolve) => {
                     const modalErro = document.getElementById('modalAcessoNegado');
                     const btnTentar = document.getElementById('btnTentarSenhaNovamente');
-
                     modalErro.classList.remove('escondido');
-
                     const onClickTentar = () => {
                         btnTentar.removeEventListener('click', onClickTentar);
                         modalErro.classList.add('escondido');
@@ -496,6 +592,7 @@ async function abrirCaderno(id, titulo, permissao) {
             }
         }
     }
+
 
     // 3. Se passou pela segurança (ou não tinha senha), Abre o Caderno!
     cadernoAtualId = id;
@@ -676,24 +773,7 @@ bolinhasEdit.forEach(b => {
     b.addEventListener('click', (e) => { bolinhasEdit.forEach(b => b.classList.remove('selecionada')); e.target.classList.add('selecionada'); corCadernoEdit = e.target.getAttribute('data-cor'); });
 });
 
-document.getElementById('btnConfigCaderno')?.addEventListener('click', async () => {
-    document.getElementById('modalConfigCaderno').classList.remove('escondido');
-    document.getElementById('inputEditNomeCaderno').value = document.getElementById('tituloCadernoAtual').innerText;
-    document.getElementById('inputPinCaderno').value = config.pin || '';
-
-    if (souDonoDoCadernoAtual) { document.getElementById('btnAbrirModalExcluirCaderno').classList.remove('escondido'); }
-    else { document.getElementById('btnAbrirModalExcluirCaderno').classList.add('escondido'); }
-
-    const cadernoAtualSnap = await get(ref(database, `cadernos/${cadernoAtualId}`));
-    if (cadernoAtualSnap.exists()) {
-        const d = cadernoAtualSnap.val(); corCadernoEdit = d.corTema || "#2196F3";
-        const config = d.config || {};
-        document.getElementById('selectFonteCaderno').value = config.fonte || 'fonte-padrao';
-        document.getElementById('selectFundoCaderno').value = config.fundo || 'fundo-limpo';
-        document.getElementById('inputLinkMusica').value = config.musica || '';
-        bolinhasEdit.forEach(b => { b.classList.remove('selecionada'); if (b.getAttribute('data-cor') === corCadernoEdit) b.classList.add('selecionada'); });
-    }
-});
+// [REMOVIDO] Listener duplicado do btnConfigCaderno — o correto está abaixo
 
 // --- CORREÇÃO: Salvamento Seguro das Configurações ---
 document.getElementById('btnSalvarConfigCaderno')?.addEventListener('click', async () => {
@@ -710,13 +790,20 @@ document.getElementById('btnSalvarConfigCaderno')?.addEventListener('click', asy
             corTema: corCadernoEdit
         });
 
-        // 2. Atualiza a sub-árvore de configurações (Fundo, Fonte, Música e PIN)
-        await update(ref(database, `cadernos/${cadernoAtualId}/config`), {
+        // 2. Atualiza a sub-árvore de configurações (Fundo, Fonte, Música e Módulos)
+        const configUpdate = {
             fonte: document.getElementById('selectFonteCaderno').value,
             fundo: document.getElementById('selectFundoCaderno').value,
             musica: document.getElementById('inputLinkMusica').value.trim(),
-            pin: pinValue
-        });
+            mostrarMusica: document.getElementById('toggleModuloMusica').checked,
+            mostrarWatchlist: document.getElementById('toggleModuloWatchlist').checked
+        };
+        // Só atualiza o PIN se o usuário digitou algo novo (campo vazio = manter senha atual)
+        if (pinValue !== '') {
+            configUpdate.pin = obfuscatePIN(pinValue);
+        }
+        await update(ref(database, `cadernos/${cadernoAtualId}/config`), configUpdate);
+
 
         document.getElementById('modalConfigCaderno').classList.add('escondido');
     } catch (erro) {
@@ -742,8 +829,15 @@ document.getElementById('btnConfigCaderno')?.addEventListener('click', async () 
         document.getElementById('selectFundoCaderno').value = config.fundo || 'fundo-limpo';
         document.getElementById('inputLinkMusica').value = config.musica || '';
 
+        // Módulos opcionais
+        const toggleMusica = document.getElementById('toggleModuloMusica');
+        const toggleWatchlist = document.getElementById('toggleModuloWatchlist');
+        toggleMusica.checked = config.mostrarMusica !== false; // default true para retrocompatibilidade
+        toggleWatchlist.checked = config.mostrarWatchlist === true; // default false
+        document.getElementById('campoMusica').classList.toggle('escondido', !toggleMusica.checked);
+
         const inputPin = document.getElementById('inputPinCaderno');
-        if (inputPin) inputPin.value = config.pin || '';
+        if (inputPin) inputPin.value = ''; // Nunca carregar hash — campo sempre começa vazio
 
         bolinhasEdit.forEach(b => { b.classList.remove('selecionada'); if (b.getAttribute('data-cor') === corCadernoEdit) b.classList.add('selecionada'); });
     }
@@ -959,11 +1053,30 @@ document.getElementById('btnLimparFormato')?.addEventListener('mousedown', (e) =
 
 function salvarTextoFirebase() {
     if (minhaPermissaoAtual !== 'leitor' && cadernoAtualId) {
-        // Passa o conteúdo pelo nosso Sanitizador antes de ir pro banco!
-        const textoLimpo = sanitizarHTML(caixaDeTexto.innerHTML);
-        set(ref(database, `anotacoes/${cadernoAtualId}/pagina_${paginaAtual}`), { texto: textoLimpo });
+        meuUltimoUpdate = Date.now(); // Anti-spam: marca que EU fiz esta alteração
+        const textoAtual = caixaDeTexto.innerHTML;
+
+        // Otimização: Evita salvar se o conteúdo não mudou
+        if (window.ultimoTextoSalvo === textoAtual) return;
+
+        const textoLimpo = sanitizarHTML(textoAtual);
+        const status = document.getElementById('saveStatus');
+        if (status) {
+            status.innerText = "Salvando...";
+            status.classList.remove('escondido');
+        }
+
+        set(ref(database, `anotacoes/${cadernoAtualId}/pagina_${paginaAtual}`), { texto: textoLimpo })
+            .then(() => {
+                window.ultimoTextoSalvo = textoAtual;
+                if (status) {
+                    status.innerText = "Salvo!";
+                    setTimeout(() => status.classList.add('escondido'), 2000);
+                }
+            });
     }
 }
+
 
 let timerSalvarTexto;
 let timerDigitando;
@@ -1077,7 +1190,7 @@ document.getElementById('inputFoto')?.addEventListener('change', async (e) => {
         if (window.mostrarToast) window.mostrarToast("Foto colada com sucesso!", "📸");
     } catch (erro) {
         console.error("Erro ao comprimir imagem:", erro);
-        alert("Ops! Tivemos um problema ao processar essa imagem.");
+        if (window.mostrarToast) window.mostrarToast("Ops! Problema ao processar essa imagem.", "❌");
     }
     e.target.value = ''; // Limpa o input
 });
@@ -1278,7 +1391,7 @@ document.getElementById('btnGravarAudio')?.addEventListener('click', async (e) =
 
     } catch (erro) {
         console.error("Erro ao acessar microfone:", erro);
-        alert("Ops! Precisamos da permissão do microfone para gravar sua voz.");
+        if (window.mostrarToast) window.mostrarToast("Precisamos da permissão do microfone para gravar.", "🎙️");
     }
 });
 
@@ -1463,6 +1576,7 @@ document.getElementById('btnAdicionarTarefa')?.addEventListener('click', () => {
     if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return; const inp = document.getElementById('inputNovaTarefa');
     if (inp.value.trim() !== '') { push(ref(database, `tarefas/${cadernoAtualId}`), { texto: inp.value.trim(), concluida: false }); inp.value = ''; }
 });
+document.getElementById('inputNovaTarefa')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnAdicionarTarefa')?.click(); });
 
 document.getElementById('btnSalvarEdicaoTarefa')?.addEventListener('click', async () => {
     if (tarefaSendoEditadaId && cadernoAtualId) {
@@ -2002,17 +2116,20 @@ function carregarPaginaAtual() {
             tsLeitura: Date.now()
         });
     }
-    // Mantém a presença atualizada
     if (refMinhaPresenca) {
         update(refMinhaPresenca, { paginaLendo: paginaAtual });
     }
 
-    if (escutaAnotacoes) escutaAnotacoes(); if (escutaStickers) escutaStickers(); if (escutaDesenhos) escutaDesenhos();
-    ajustarTamanhoCanvas();
+    // LIMPEZA DE LISTENERS ANTIGOS (Evita Flicker e Race Conditions)
+    if (escutaAnotacoes) escutaAnotacoes();
+    if (escutaStickers) escutaStickers();
+    if (escutaDesenhos) escutaDesenhos();
+
     ajustarTamanhoCanvas();
     if (ctxDesenho) ctxDesenho.clearRect(0, 0, canvasDesenho.width, canvasDesenho.height);
 
     escutaAnotacoes = onValue(ref(database, `anotacoes/${cadernoAtualId}/pagina_${paginaAtual}`), (snapshot) => {
+
         const d = snapshot.val() || {};
         notificarNovoConteudo("A página foi atualizada!");
         const camadaCapsula = document.getElementById('camadaCapsula');
@@ -2226,7 +2343,35 @@ function iniciarRotinasDoCaderno() {
                 folhaA4Wrapper.className = `folha-a4 ${config.fonte || 'fonte-padrao'} ${config.fundo || 'fundo-limpo'}`;
             }
             document.getElementById('tituloCadernoAtual').className = config.fonte || 'fonte-padrao';
-            embedMusica(config.musica);
+
+            // Módulos opcionais: Música
+            const mostrarMusica = config.mostrarMusica !== false; // retrocompat: default true
+            const tabMusica = document.querySelector('.tab-lateral-btn[data-tab="musica"]');
+            const navMusica = document.querySelector('.nav-mobile-btn[data-painel="musica"]');
+            if (tabMusica) tabMusica.style.display = mostrarMusica ? 'flex' : 'none';
+            if (navMusica) navMusica.style.display = mostrarMusica ? 'flex' : 'none';
+            if (mostrarMusica) {
+                embedMusica(config.musica);
+            } else {
+                document.getElementById('containerMusica').classList.add('escondido');
+                if (tabLateralAtiva === 'musica') trocarTabLateral('planos');
+            }
+
+            // Módulos opcionais: Watchlist
+            const mostrarWatchlist = config.mostrarWatchlist === true;
+            const tabWatchlist = document.querySelector('.tab-lateral-btn[data-tab="watchlist"]');
+            const navWatchlist = document.querySelector('.nav-mobile-btn[data-painel="watchlist"]');
+            if (tabWatchlist) tabWatchlist.style.display = mostrarWatchlist ? 'flex' : 'none';
+            if (navWatchlist) navWatchlist.style.display = mostrarWatchlist ? 'flex' : 'none';
+            if (mostrarWatchlist) {
+                escutarWatchlist();
+            } else {
+                document.getElementById('containerWatchlist').classList.add('escondido');
+                if (tabLateralAtiva === 'watchlist') trocarTabLateral('planos');
+            }
+
+            // Ativa a primeira aba lateral
+            trocarTabLateral(tabLateralAtiva);
 
             if (d.clima) {
                 document.querySelectorAll('.btn-humor').forEach(b => {
@@ -2328,9 +2473,19 @@ function iniciarRotinasDoCaderno() {
 // ==========================================
 // MOTOR DE REORDENAÇÃO DE TAREFAS (Long Press)
 // ==========================================
+let _tarefasMoveHandler = null, _tarefasUpHandler = null;
 const habilitarReordenacaoTarefas = (idListaUl) => {
     const lista = document.getElementById(idListaUl);
     if (!lista) return;
+    // Limpeza: remove listeners globais antigos para não acumular
+    if (_tarefasMoveHandler) {
+        document.removeEventListener('mousemove', _tarefasMoveHandler);
+        document.removeEventListener('touchmove', _tarefasMoveHandler);
+    }
+    if (_tarefasUpHandler) {
+        document.removeEventListener('mouseup', _tarefasUpHandler);
+        document.removeEventListener('touchend', _tarefasUpHandler);
+    }
 
     let timerSegurar;
     let itemArrastado = null;
@@ -2414,6 +2569,8 @@ const habilitarReordenacaoTarefas = (idListaUl) => {
         }
     };
 
+    _tarefasMoveHandler = moverTarefa;
+    _tarefasUpHandler = soltarTarefa;
     document.addEventListener('mousemove', moverTarefa);
     document.addEventListener('touchmove', moverTarefa, { passive: false });
     document.addEventListener('mouseup', soltarTarefa);
@@ -2421,15 +2578,460 @@ const habilitarReordenacaoTarefas = (idListaUl) => {
 };
 
 // ==========================================
-// 12. EXPORTAÇÃO PARA PDF
+// TOGGLE DE MÓDULOS NO MODAL DE CONFIG
+// ==========================================
+document.getElementById('toggleModuloMusica')?.addEventListener('change', (e) => {
+    document.getElementById('campoMusica').classList.toggle('escondido', !e.target.checked);
+});
+
+// ==========================================
+// 12.5 WATCHLIST (FILMES/SÉRIES) — TELA CHEIA COM GRID
+// ==========================================
+let filtroWatchlistAtual = 'todos';
+let dadosWatchlistCache = {};
+let fotoWatchlistBase64 = '';
+
+function escutarWatchlist() {
+    if (!cadernoAtualId) return;
+    if (escutaWatchlist) escutaWatchlist();
+
+    escutaWatchlist = onValue(ref(database, `watchlist/${cadernoAtualId}`), (snapshot) => {
+        dadosWatchlistCache = snapshot.val() || {};
+        renderizarPreviewWatchlist(dadosWatchlistCache);
+        renderizarGridWatchlist(dadosWatchlistCache);
+    });
+}
+
+// Preview no painel lateral (resumo rápido)
+function renderizarPreviewWatchlist(dados) {
+    const preview = document.getElementById('listaWatchlistPreview');
+    if (!preview) return;
+    const itens = Object.entries(dados);
+    if (itens.length === 0) {
+        preview.innerHTML = 'Nenhum item adicionado ainda.';
+        return;
+    }
+    const assistindo = itens.filter(([, i]) => {
+        const s = i.statusParticipantes || {};
+        return Object.values(s).some(v => v === 'assistindo');
+    }).length;
+    const total = itens.length;
+    preview.innerHTML = `<strong>${total}</strong> títulos adicionados${assistindo > 0 ? ` · <strong>${assistindo}</strong> assistindo agora` : ''}`;
+}
+
+// Grid fullscreen
+function renderizarGridWatchlist(dados) {
+    const grid = document.getElementById('gridWatchlist');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    let itens = Object.entries(dados);
+
+    // Filtrar
+    if (filtroWatchlistAtual !== 'todos') {
+        itens = itens.filter(([id, item]) => {
+            const statusP = item.statusParticipantes || {};
+            const temStatus = Object.values(statusP).some(v => v === filtroWatchlistAtual);
+            return temStatus || item.status === filtroWatchlistAtual;
+        });
+    }
+
+    // Ordenar
+    const ordem = document.getElementById('selectOrdemWatchlist')?.value || 'mais-recentes';
+    itens.sort((a, b) => {
+        const itemA = a[1];
+        const itemB = b[1];
+        if (ordem === 'mais-recentes') {
+            return (itemB.criadoEm || 0) - (itemA.criadoEm || 0);
+        } else if (ordem === 'mais-antigos') {
+            return (itemA.criadoEm || 0) - (itemB.criadoEm || 0);
+        } else if (ordem === 'az') {
+            return (itemA.titulo || '').localeCompare(itemB.titulo || '');
+        } else if (ordem === 'za') {
+            return (itemB.titulo || '').localeCompare(itemA.titulo || '');
+        }
+        return 0;
+    });
+
+    if (itens.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--texto-secundario); font-size: 16px;">🎬 Nenhum filme ou série encontrado com esses filtros.</div>';
+        return;
+    }
+
+    itens.forEach(([id, item]) => {
+
+        const card = document.createElement('div');
+        card.className = 'watchlist-card';
+
+        // Foto
+        if (item.foto) {
+            const img = document.createElement('img');
+            img.className = 'watchlist-card-foto';
+            img.src = item.foto;
+            img.alt = item.titulo;
+            card.appendChild(img);
+        } else {
+            const ph = document.createElement('div');
+            ph.className = 'watchlist-card-foto-placeholder';
+            ph.textContent = item.tipo === 'serie' ? '📺' : '🎬';
+            card.appendChild(ph);
+        }
+
+        // Três pontinhos (CRUD)
+        if (minhaPermissaoAtual !== 'leitor') {
+            const menuWrapper = document.createElement('div');
+            menuWrapper.className = 'watchlist-menu-wrapper';
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'watchlist-menu-btn';
+            menuBtn.innerHTML = '⋮';
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Fecha outros menus abertos
+                document.querySelectorAll('.watchlist-menu-dropdown').forEach(m => m.remove());
+                const dropdown = document.createElement('div');
+                dropdown.className = 'watchlist-menu-dropdown';
+                dropdown.innerHTML = `
+                    <button class="watchlist-menu-item" data-acao="editar">✏️ Editar</button>
+                    <button class="watchlist-menu-item danger" data-acao="excluir">🗑️ Excluir</button>
+                `;
+                dropdown.querySelector('[data-acao="editar"]').addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    dropdown.remove();
+                    abrirModalEditarWatchlist(id, item);
+                });
+                dropdown.querySelector('[data-acao="excluir"]').addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    dropdown.remove();
+                    document.getElementById('nomeFilmeExcluir').textContent = item.titulo;
+                    document.getElementById('idFilmeExcluir').value = id;
+                    document.getElementById('modalExcluirWatchlist').classList.remove('escondido');
+                });
+                menuWrapper.appendChild(dropdown);
+                // Fecha ao clicar fora
+                setTimeout(() => {
+                    const fechar = (ev) => { if (!dropdown.contains(ev.target)) { dropdown.remove(); document.removeEventListener('click', fechar); } };
+                    document.addEventListener('click', fechar);
+                }, 10);
+            });
+            menuWrapper.appendChild(menuBtn);
+            card.appendChild(menuWrapper);
+        }
+
+        // Body
+        const body = document.createElement('div');
+        body.className = 'watchlist-card-body';
+
+        const tipoBadge = item.tipo === 'serie' ? 'tipo-serie' : 'tipo-filme';
+        const tipoTexto = item.tipo === 'serie' ? '📺 Série' : '🎬 Filme';
+
+        const header = document.createElement('div');
+        header.className = 'watchlist-card-header';
+        header.innerHTML = `<h4>${item.titulo}</h4><span class="watchlist-tipo-badge ${tipoBadge}">${tipoTexto}</span>`;
+        body.appendChild(header);
+
+        // Participantes: status + nota de cada um
+        const participantesDiv = document.createElement('div');
+        participantesDiv.className = 'watchlist-participantes';
+
+        const statusParticipantes = item.statusParticipantes || {};
+        const avaliacoes = item.avaliacoes || {};
+
+        // Retrocompat: migrar status antigo para statusParticipantes
+        if (item.status && !statusParticipantes[item.criadoPor]) {
+            statusParticipantes[item.criadoPor] = item.status;
+        }
+
+        // Pega todos os UIDs envolvidos
+        const anotacoesParticipantes = item.anotacoesParticipantes || {};
+        const uidsEnvolvidos = new Set([...Object.keys(statusParticipantes), ...Object.keys(avaliacoes), ...Object.keys(anotacoesParticipantes)]);
+
+        // Função auxiliar para renderizar estrelas com hover
+        const renderStars = (uid, notaSalva, podeEditar) => {
+            const container = document.createElement('div');
+            container.className = 'watchlist-stars';
+            container.style.marginLeft = '4px';
+            const stars = [];
+
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElement('span');
+                star.className = `watchlist-star ${i <= notaSalva ? 'preenchida' : ''}`;
+                star.textContent = '⭐';
+                star.style.fontSize = '14px';
+                stars.push(star);
+
+                if (podeEditar) {
+                    star.addEventListener('mouseover', () => {
+                        stars.forEach((s, idx) => {
+                            if (idx < i) s.classList.add('preenchida');
+                            else s.classList.remove('preenchida');
+                        });
+                    });
+                    star.addEventListener('mouseout', () => {
+                        stars.forEach((s, idx) => {
+                            if (idx < notaSalva) s.classList.add('preenchida');
+                            else s.classList.remove('preenchida');
+                        });
+                    });
+                    star.addEventListener('click', () => {
+                        const novaAval = i === notaSalva ? 0 : i;
+                        set(ref(database, `watchlist/${cadernoAtualId}/${id}/avaliacoes/${uid}`), novaAval || null);
+                    });
+                }
+                container.appendChild(star);
+            }
+            return container;
+        };
+
+        // Meu preenchimento primeiro
+        const meuUid = usuarioAtual?.uid;
+        const meuStatus = statusParticipantes[meuUid] || '';
+        const minhaAvaliacao = avaliacoes[meuUid] || 0;
+        const minhaAnotacao = anotacoesParticipantes[meuUid] || '';
+
+        // Minha linha
+        const minhaRow = document.createElement('div');
+        minhaRow.className = 'watchlist-participante-row';
+        const meuDado = usuariosDb[meuUid] || {};
+        const meuNome = meuDado.nome || 'Eu';
+        const minhaFoto = meuDado.fotoPerfil || AVATAR_PADRAO;
+
+        minhaRow.innerHTML = `<img src="${minhaFoto}" alt="${meuNome}"><span class="nome-part">${meuNome.split(' ')[0]}</span>`;
+
+        // Meu status (select)
+        if (minhaPermissaoAtual !== 'leitor') {
+            const selectStatus = document.createElement('select');
+            selectStatus.style.cssText = 'font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--borda);background:var(--bg-fundo);color:var(--texto-principal);flex-shrink:0;max-width:90px;';
+            selectStatus.innerHTML = `
+                <option value="">— Status —</option>
+                <option value="quero" ${meuStatus === 'quero' ? 'selected' : ''}>📌 Quero ver</option>
+                <option value="assistindo" ${meuStatus === 'assistindo' ? 'selected' : ''}>▶️ Assistindo</option>
+                <option value="assistido" ${meuStatus === 'assistido' ? 'selected' : ''}>✅ Assistido</option>
+            `;
+            selectStatus.addEventListener('change', () => {
+                set(ref(database, `watchlist/${cadernoAtualId}/${id}/statusParticipantes/${meuUid}`), selectStatus.value || null);
+            });
+            minhaRow.appendChild(selectStatus);
+        } else if (meuStatus) {
+            const statusEmoji = meuStatus === 'assistindo' ? '▶️' : meuStatus === 'quero' ? '📌' : '✅';
+            const badge = document.createElement('span');
+            badge.className = `watchlist-status-badge status-${meuStatus}`;
+            badge.textContent = statusEmoji;
+            minhaRow.appendChild(badge);
+        }
+
+        // Minhas estrelas
+        minhaRow.appendChild(renderStars(meuUid, minhaAvaliacao, minhaPermissaoAtual !== 'leitor'));
+
+        // Minha anotação
+        if (minhaPermissaoAtual !== 'leitor') {
+            const btnNote = document.createElement('button');
+            btnNote.className = 'btn-pequeno';
+            btnNote.style.cssText = 'font-size: 12px; padding: 2px 4px; background: none; border: none; box-shadow: none; cursor: pointer; flex-shrink:0;';
+            btnNote.textContent = minhaAnotacao ? '📝' : '➕📝';
+            btnNote.title = 'Adicionar/Editar anotação';
+            btnNote.addEventListener('click', () => {
+                document.getElementById('tituloModalAnotacao').textContent = `Sua Anotação sobre: ${item.titulo}`;
+                document.getElementById('inputAnotacaoWatchlist').value = minhaAnotacao;
+                document.getElementById('inputAnotacaoWatchlist').readOnly = false;
+                document.getElementById('btnSalvarAnotacao').classList.remove('escondido');
+                document.getElementById('anotacaoItemId').value = id;
+                document.getElementById('anotacaoUid').value = meuUid;
+                document.getElementById('modalAnotacaoWatchlist').classList.remove('escondido');
+            });
+            minhaRow.appendChild(btnNote);
+        }
+        
+        participantesDiv.appendChild(minhaRow);
+
+        // Outros participantes
+        uidsEnvolvidos.forEach(uid => {
+            if (uid === meuUid) return;
+            const dadoP = usuariosDb[uid] || {};
+            const nomeP = dadoP.nome || 'Alguém';
+            const fotoP = dadoP.fotoPerfil || AVATAR_PADRAO;
+            const statusP = statusParticipantes[uid] || '';
+            const notaP = avaliacoes[uid] || 0;
+            const anotaP = anotacoesParticipantes[uid] || '';
+            if (!statusP && !notaP && !anotaP) return;
+
+            const row = document.createElement('div');
+            row.className = 'watchlist-participante-row';
+            row.innerHTML = `<img src="${fotoP}" alt="${nomeP}"><span class="nome-part">${nomeP.split(' ')[0]}</span>`;
+
+            if (statusP) {
+                const statusEmoji = statusP === 'assistindo' ? '▶️' : statusP === 'quero' ? '📌' : '✅';
+                const badge = document.createElement('span');
+                badge.className = `watchlist-status-badge status-${statusP}`;
+                badge.textContent = statusEmoji;
+                badge.style.fontSize = '10px';
+                badge.style.padding = '1px 6px';
+                row.appendChild(badge);
+            }
+
+            if (notaP > 0) {
+                row.appendChild(renderStars(uid, notaP, false));
+            }
+
+            if (anotaP) {
+                const btnNote = document.createElement('button');
+                btnNote.className = 'btn-pequeno';
+                btnNote.style.cssText = 'font-size: 12px; padding: 2px 4px; background: none; border: none; box-shadow: none; cursor: pointer; opacity: 0.8; flex-shrink:0;';
+                btnNote.textContent = '📝';
+                btnNote.title = `Ler anotação de ${nomeP.split(' ')[0]}`;
+                btnNote.addEventListener('click', () => {
+                    document.getElementById('tituloModalAnotacao').textContent = `Anotação de ${nomeP.split(' ')[0]}: ${item.titulo}`;
+                    document.getElementById('inputAnotacaoWatchlist').value = anotaP;
+                    document.getElementById('inputAnotacaoWatchlist').readOnly = true;
+                    document.getElementById('btnSalvarAnotacao').classList.add('escondido');
+                    document.getElementById('modalAnotacaoWatchlist').classList.remove('escondido');
+                });
+                row.appendChild(btnNote);
+            }
+
+            participantesDiv.appendChild(row);
+        });
+
+        body.appendChild(participantesDiv);
+        card.appendChild(body);
+        grid.appendChild(card);
+    });
+}
+
+// Handler para salvar anotação da watchlist
+document.getElementById('btnSalvarAnotacao')?.addEventListener('click', () => {
+    const texto = document.getElementById('inputAnotacaoWatchlist').value.trim();
+    const itemId = document.getElementById('anotacaoItemId').value;
+    const uid = document.getElementById('anotacaoUid').value;
+    
+    if (itemId && uid && cadernoAtualId) {
+        set(ref(database, `watchlist/${cadernoAtualId}/${itemId}/anotacoesParticipantes/${uid}`), texto || null);
+        document.getElementById('modalAnotacaoWatchlist').classList.add('escondido');
+        if (window.mostrarToast) window.mostrarToast("Anotação salva!", "📝");
+    }
+});
+
+// Handler para confirmar exclusão do filme
+document.getElementById('btnConfirmarExcluirWatchlist')?.addEventListener('click', () => {
+    const id = document.getElementById('idFilmeExcluir').value;
+    if (id && cadernoAtualId) {
+        remove(ref(database, `watchlist/${cadernoAtualId}/${id}`));
+        document.getElementById('modalExcluirWatchlist').classList.add('escondido');
+        if (window.mostrarToast) window.mostrarToast("Título removido!", "🗑️");
+    }
+});
+
+function abrirModalEditarWatchlist(id, item) {
+    document.getElementById('tituloModalWatchlist').textContent = '✏️ Editar na Watchlist';
+    document.getElementById('inputTituloWatchlist').value = item.titulo;
+    document.getElementById('selectTipoWatchlist').value = item.tipo || 'filme';
+    document.getElementById('watchlistEditandoId').value = id;
+    document.getElementById('previewFotoWatchlist').innerHTML = item.foto ? `<img src="${item.foto}" style="max-width:100%;max-height:100px;border-radius:8px;">` : '';
+    fotoWatchlistBase64 = item.foto || '';
+    document.getElementById('btnSalvarWatchlist').textContent = 'Salvar Alterações';
+    document.getElementById('modalWatchlist').classList.remove('escondido');
+}
+
+// Abrir watchlist fullscreen
+document.getElementById('containerWatchlist')?.addEventListener('click', () => {
+    document.getElementById('telaWatchlist').classList.remove('escondido');
+});
+
+document.getElementById('btnVoltarWatchlist')?.addEventListener('click', () => {
+    document.getElementById('telaWatchlist').classList.add('escondido');
+});
+
+// Filtros fullscreen
+document.querySelectorAll('.filtro-watchlist-full').forEach(btn => {
+    btn.addEventListener('click', () => {
+        filtroWatchlistAtual = btn.getAttribute('data-filtro');
+        document.querySelectorAll('.filtro-watchlist-full').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+        renderizarGridWatchlist(dadosWatchlistCache);
+    });
+});
+
+// Select de Ordem
+document.getElementById('selectOrdemWatchlist')?.addEventListener('change', () => {
+    renderizarGridWatchlist(dadosWatchlistCache);
+});
+
+// Foto da watchlist
+document.getElementById('inputFotoWatchlist')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        fotoWatchlistBase64 = await comprimirImagemCanvas(file, 400, 0.6);
+        document.getElementById('previewFotoWatchlist').innerHTML = `<img src="${fotoWatchlistBase64}" style="max-width:100%;max-height:100px;border-radius:8px;">`;
+    } catch (err) {
+        console.error('Erro foto watchlist:', err);
+    }
+    e.target.value = '';
+});
+
+// Abrir modal para adicionar item
+function abrirModalAdicionarWatchlist() {
+    if (minhaPermissaoAtual === 'leitor') return;
+    document.getElementById('tituloModalWatchlist').textContent = '🎬 Adicionar à Watchlist';
+    document.getElementById('inputTituloWatchlist').value = '';
+    document.getElementById('selectTipoWatchlist').value = 'serie';
+    document.getElementById('watchlistEditandoId').value = '';
+    document.getElementById('previewFotoWatchlist').innerHTML = '';
+    document.getElementById('btnSalvarWatchlist').textContent = 'Adicionar';
+    fotoWatchlistBase64 = '';
+    document.getElementById('modalWatchlist').classList.remove('escondido');
+}
+
+document.getElementById('btnAdicionarWatchlistFull')?.addEventListener('click', abrirModalAdicionarWatchlist);
+
+// Salvar item na watchlist (add ou edit)
+document.getElementById('btnSalvarWatchlist')?.addEventListener('click', async () => {
+    const titulo = document.getElementById('inputTituloWatchlist').value.trim();
+    if (!titulo || !cadernoAtualId) return;
+
+    const editandoId = document.getElementById('watchlistEditandoId').value;
+
+    if (editandoId) {
+        const updateData = {
+            titulo: titulo,
+            tipo: document.getElementById('selectTipoWatchlist').value,
+        };
+        if (fotoWatchlistBase64) updateData.foto = fotoWatchlistBase64;
+        await update(ref(database, `watchlist/${cadernoAtualId}/${editandoId}`), updateData);
+        if (window.mostrarToast) window.mostrarToast(`"${titulo}" atualizado!`, '✏️');
+    } else {
+        const novoItem = {
+            titulo: titulo,
+            tipo: document.getElementById('selectTipoWatchlist').value,
+            criadoPor: usuarioAtual.uid,
+            criadoEm: Date.now(),
+            avaliacoes: {},
+            statusParticipantes: {},
+        };
+        if (fotoWatchlistBase64) novoItem.foto = fotoWatchlistBase64;
+        await push(ref(database, `watchlist/${cadernoAtualId}`), novoItem);
+        if (window.mostrarToast) window.mostrarToast(`"${titulo}" adicionado!`, '🎬');
+    }
+
+    document.getElementById('modalWatchlist').classList.add('escondido');
+});
+
+// ==========================================
+// 13. EXPORTAÇÃO PARA PDF
 // ==========================================
 document.getElementById('btnExportarPDF')?.addEventListener('click', async () => {
     try {
         window.scrollTo(0, 0);
 
+        // Loading overlay (z-index alto para cobrir a sala de render)
         const divLoading = document.createElement('div');
-        divLoading.style.position = 'fixed'; divLoading.style.top = '0'; divLoading.style.left = '0'; divLoading.style.width = '100%'; divLoading.style.height = '100%'; divLoading.style.backgroundColor = 'rgba(0,0,0,0.8)'; divLoading.style.color = 'white'; divLoading.style.display = 'flex'; divLoading.style.justifyContent = 'center'; divLoading.style.alignItems = 'center'; divLoading.style.zIndex = '9999'; divLoading.style.fontSize = '24px';
-        divLoading.innerHTML = "Gerando PDF com amor... Aguarde as fotos carregarem! 📸";
+        Object.assign(divLoading.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.85)', color: 'white', display: 'flex',
+            justifyContent: 'center', alignItems: 'center', zIndex: '99999',
+            fontSize: '22px', fontFamily: 'Inter, sans-serif', textAlign: 'center',
+            flexDirection: 'column', gap: '15px', padding: '20px', boxSizing: 'border-box'
+        });
+        divLoading.innerHTML = `📸 Gerando seu PDF...<br><span style="font-size:14px;opacity:0.7">Aguarde as fotos carregarem</span>`;
         document.body.appendChild(divLoading);
 
         const configAtualSnap = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
@@ -2439,19 +3041,20 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
 
         const tituloCaderno = document.getElementById('tituloCadernoAtual').innerText;
 
+        // Container de render: posicionado ABSOLUTE (não fixed!)
+        // html2canvas precisa que o elemento esteja no flow do documento
         const salaEscura = document.createElement('div');
-        salaEscura.style.cssText = `
-            position: fixed;
-            top: -99999px;
-            left: 0;
-            width: 800px;
-            z-index: 9999;
-            background-color: #ffffff;
-        `;
+        salaEscura.id = 'salaEscuraPDF';
+        Object.assign(salaEscura.style, {
+            position: 'absolute', top: '0', left: '0', width: '800px',
+            zIndex: '99998', backgroundColor: '#ffffff', color: '#111111',
+            overflow: 'visible', pointerEvents: 'none', height: 'auto'
+        });
         document.body.appendChild(salaEscura);
 
+        // Capa do PDF
         const capa = document.createElement('div');
-        capa.innerHTML = `<h1 style="text-align: center; border-bottom: 2px solid #333; padding: 40px 0; margin-bottom: 30px; color: #111;">${tituloCaderno}</h1>`;
+        capa.innerHTML = `<h1 style="text-align:center; border-bottom:2px solid #333; padding:40px 0; margin-bottom:30px; color:#111; font-family:'Lora',serif;">${tituloCaderno}</h1>`;
         salaEscura.appendChild(capa);
 
         const anotacoesSnap = await get(ref(database, `anotacoes/${cadernoAtualId}`));
@@ -2464,40 +3067,85 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
 
         for (let i = 1; i <= totalPaginas; i++) {
             const folha = document.createElement('div');
-            folha.className = `folha-a4 ${classeFonte} ${classeFundo}`;
-            folha.style.color = '#111'; folha.style.backgroundColor = classeFundo === 'fundo-limpo' ? '#ffffff' : '#fdfbf7';
-            folha.style.border = 'none'; folha.style.boxShadow = 'none'; folha.style.padding = '40px'; folha.style.minHeight = '1000px';
-            folha.style.position = 'relative'; folha.style.pageBreakAfter = 'always';
+            // Não usar .folha-a4 pois carrega overflow:hidden !important do CSS
+            // Criamos inline puro para total controle
+            Object.assign(folha.style, {
+                width: '800px', height: 'auto', maxHeight: 'none',
+                overflow: 'visible', position: 'relative',
+                padding: '40px', boxSizing: 'border-box', border: 'none', boxShadow: 'none',
+                color: '#111', backgroundColor: classeFundo === 'fundo-limpo' ? '#ffffff' : '#fdfbf7',
+                fontFamily: classeFonte === 'fonte-cursiva' ? "'Caveat', cursive" :
+                    classeFonte === 'fonte-maquina' ? "'Courier Prime', monospace" :
+                        classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif",
+                pageBreakAfter: 'always', pageBreakInside: 'avoid',
+                borderBottom: '2px solid #e8ddd0', marginBottom: '0', paddingBottom: '40px'
+            });
+
+            // Aplica fundo temático
+            if (classeFundo === 'fundo-linhas') {
+                folha.style.backgroundImage = 'repeating-linear-gradient(transparent, transparent 29px, #e8ddd0 29px, #e8ddd0 30px)';
+            } else if (classeFundo === 'fundo-pontilhado') {
+                folha.style.backgroundImage = 'radial-gradient(#9a8a78 1px, transparent 1px)';
+                folha.style.backgroundSize = '20px 20px';
+            } else if (classeFundo === 'fundo-quadriculado') {
+                folha.style.backgroundImage = 'linear-gradient(#e8ddd0 1px, transparent 1px), linear-gradient(90deg, #e8ddd0 1px, transparent 1px)';
+                folha.style.backgroundSize = '20px 20px';
+            }
 
             const anotacaoData = todasAnotacoes[`pagina_${i}`] || {};
 
             if (anotacaoData.bloqueadoAte && anotacaoData.bloqueadoAte > Date.now()) {
-                folha.innerHTML = `<div style="text-align: center; padding-top: 200px;"><h2>🔒 Cápsula do Tempo</h2><p>Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
+                folha.innerHTML = `<div style="text-align:center; padding-top:200px;"><h2 style="color:#111;">🔒 Cápsula do Tempo</h2><p style="color:#333;">Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
             } else {
+                // Texto da página - SEM a classe editor-rico para evitar !important conflicts
                 const divTexto = document.createElement('div');
-                divTexto.className = 'editor-rico';
-                divTexto.style.border = 'none'; divTexto.style.padding = '0'; divTexto.style.minHeight = 'auto';
-                divTexto.innerHTML = anotacaoData.texto || "<em>Página em branco.</em>";
+                Object.assign(divTexto.style, {
+                    width: '100%', height: 'auto', maxHeight: 'none',
+                    overflow: 'visible', border: 'none', padding: '0',
+                    fontSize: '16px', lineHeight: '1.7', color: '#111',
+                    wordBreak: 'break-word'
+                });
+                divTexto.innerHTML = anotacaoData.texto || "<em style='color:#999;'>Página em branco.</em>";
+
+                // Força cor escura em textos brancos (dark mode)
+                divTexto.querySelectorAll('*').forEach(el => {
+                    if (el.style && el.style.color) {
+                        const c = el.style.color.toLowerCase();
+                        if (c.includes('255') || c.includes('fff') || c.includes('f5f5') || c.includes('e8e4') || c.includes('ede')) {
+                            el.style.color = '#111';
+                        }
+                    }
+                });
                 folha.appendChild(divTexto);
 
+                // Desenhos
                 const desenhoDaPagina = todosDesenhos[`pagina_${i}`];
                 if (desenhoDaPagina && desenhoDaPagina.img) {
                     const imgDesenho = document.createElement('img');
                     imgDesenho.src = desenhoDaPagina.img;
-                    imgDesenho.style.position = 'absolute'; imgDesenho.style.top = '0'; imgDesenho.style.left = '0';
-                    imgDesenho.style.width = '100%'; imgDesenho.style.height = '100%'; imgDesenho.style.zIndex = '5';
+                    Object.assign(imgDesenho.style, {
+                        position: 'absolute', top: '0', left: '0',
+                        width: '100%', height: '100%', zIndex: '5'
+                    });
                     folha.appendChild(imgDesenho);
                 }
 
+                // Stickers
                 const stickersDaPagina = todosStickers[`pagina_${i}`] || {};
                 const divStickers = document.createElement('div');
-                divStickers.className = 'area-stickers';
+                Object.assign(divStickers.style, {
+                    position: 'absolute', top: '0', left: '0',
+                    width: '100%', height: '100%', pointerEvents: 'none', zIndex: '10'
+                });
                 for (let key in stickersDaPagina) {
                     const s = stickersDaPagina[key];
                     const divS = document.createElement('div');
-                    divS.className = 'sticker'; divS.innerText = s.emoji;
-                    divS.style.left = `${s.x}px`; divS.style.top = `${s.y}px`;
-                    divS.style.transform = `rotate(${s.rot || 0}deg)`;
+                    divS.innerText = s.emoji;
+                    Object.assign(divS.style, {
+                        position: 'absolute', fontSize: '45px',
+                        left: `${s.x}px`, top: `${s.y}px`,
+                        transform: `rotate(${s.rot || 0}deg)`
+                    });
                     divStickers.appendChild(divS);
                 }
                 folha.appendChild(divStickers);
@@ -2505,33 +3153,124 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             salaEscura.appendChild(folha);
         }
 
+        // Planos/Metas
         const tarefasArray = [];
         document.querySelectorAll('#listaTarefas li').forEach(li => {
-            const texto = li.querySelector('.texto-tarefa').innerText;
-            const taMarcada = li.querySelector('input[type="checkbox"]').checked;
-            tarefasArray.push(`<li style="margin-bottom: 5px;">${taMarcada ? '✅' : '🔲'} ${texto}</li>`);
+            const elTexto = li.querySelector('.texto-tarefa');
+            const elCheck = li.querySelector('input[type="checkbox"]');
+            if (elTexto && elCheck) {
+                tarefasArray.push(`<li style="margin-bottom:5px;">${elCheck.checked ? '✅' : '🔲'} ${elTexto.innerText}</li>`);
+            }
         });
 
         if (tarefasArray.length > 0) {
             const divPlanos = document.createElement('div');
-            divPlanos.style.padding = '40px'; divPlanos.style.fontFamily = 'Arial, sans-serif';
-            divPlanos.innerHTML = `<h2 style="color: #ff9800; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Nossos Planos / Metas:</h2><ul style="list-style: none; padding: 0; font-size: 18px; line-height: 1.8; color: #111;">${tarefasArray.join('')}</ul>`;
+            Object.assign(divPlanos.style, { padding: '40px', fontFamily: "'Inter', sans-serif" });
+            divPlanos.innerHTML = `<h2 style="color:#c0755a; border-bottom:1px solid #e8ddd0; padding-bottom:5px; font-family:'Lora',serif;">Nossos Planos / Metas:</h2><ul style="list-style:none; padding:0; font-size:18px; line-height:1.8; color:#111;">${tarefasArray.join('')}</ul>`;
             salaEscura.appendChild(divPlanos);
         }
 
-        setTimeout(() => {
-            html2pdf().set({
-                margin: 10, filename: `${tituloCaderno}.pdf`, image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(salaEscura).save().then(() => {
-                document.body.removeChild(salaEscura); document.body.removeChild(divLoading);
-            }).catch(err => {
-                alert("Problema ao gerar PDF."); document.body.removeChild(salaEscura); document.body.removeChild(divLoading);
+        // Aguarda imagens carregarem e renderiza
+        const imagensNoSala = salaEscura.querySelectorAll('img');
+        const promessasImg = Array.from(imagensNoSala).map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = resolve;
             });
-        }, 1500);
+        });
+
+        await Promise.all(promessasImg);
+
+        // Forçar reflow do browser
+        void salaEscura.offsetHeight;
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Renderiza cada folha individualmente como uma imagem canvas
+        // e adiciona cada uma como uma página separada no PDF.
+        // Isso elimina os espaços em branco causados pelo render monolítico.
+
+        const { jsPDF } = window.jspdf || {};
+        const useJsPDFDirect = typeof jsPDF === 'function';
+
+        if (useJsPDFDirect) {
+            // Abordagem direta: html2canvas por página + jsPDF manual
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            const pdfW = pdf.internal.pageSize.getWidth();
+            const pdfH = pdf.internal.pageSize.getHeight();
+
+            const filhos = Array.from(salaEscura.children);
+            for (let idx = 0; idx < filhos.length; idx++) {
+                const filho = filhos[idx];
+                // Garante que o filho esteja visível e tenha dimensões
+                filho.style.display = 'block';
+
+                const canvas = await html2canvas(filho, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    width: 800,
+                    windowWidth: 800,
+                    scrollX: 0,
+                    scrollY: 0,
+                    logging: false,
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                const imgW = pdfW - 20; // 10mm margin each side
+                const imgH = (canvas.height / canvas.width) * imgW;
+
+                if (idx > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 10, 10, imgW, Math.min(imgH, pdfH - 20));
+
+                // Atualiza loading
+                divLoading.innerHTML = `📸 Gerando PDF...<br><span style="font-size:14px;opacity:0.7">Página ${idx + 1} de ${filhos.length}</span>`;
+            }
+
+            pdf.save(`${tituloCaderno}.pdf`);
+            salaEscura.remove();
+            divLoading.remove();
+        } else {
+            // Fallback: usa html2pdf.js (menos preciso, mas funcional)
+            html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `${tituloCaderno}.pdf`,
+                image: { type: 'jpeg', quality: 0.92 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    width: 800,
+                    windowWidth: 800,
+                    scrollX: 0,
+                    scrollY: 0,
+                    logging: false,
+                    onclone: function (clonedDoc) {
+                        const el = clonedDoc.getElementById('salaEscuraPDF');
+                        if (el) {
+                            el.style.position = 'static';
+                            el.style.width = '800px';
+                            el.style.height = 'auto';
+                            el.style.overflow = 'visible';
+                            el.style.transform = 'none';
+                        }
+                    }
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page-break' }
+            }).from(salaEscura).save().then(() => {
+                salaEscura.remove();
+                divLoading.remove();
+            }).catch(err => {
+                console.error('Erro PDF:', err);
+                if (window.mostrarToast) window.mostrarToast("Problema ao gerar PDF.", "❌");
+                salaEscura.remove();
+                divLoading.remove();
+            });
+        }
 
     } catch (erroGeral) {
-        alert("Erro ao processar o PDF.");
+        console.error('Erro geral PDF:', erroGeral);
+        if (window.mostrarToast) window.mostrarToast("Erro ao processar o PDF.", "❌");
     }
 });
 
@@ -2790,19 +3529,24 @@ function resetarTimerInatividade() {
 // Tranca a tela se passar de 10 minutos
 async function trancarPorInatividade() {
     // Só tranca se o caderno tiver senha configurada!
-    const snapConfig = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
-    const config = snapConfig.val() || {};
+    try {
+        const snapConfig = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
+        const config = snapConfig.val() || {};
 
-    if (config.pin && config.pin.trim() !== '') {
-        telaTrancada = true;
-        document.getElementById('telaBloqueioInatividade').classList.remove('escondido');
-        document.getElementById('inputDesbloqueioInatividade').value = '';
-        document.getElementById('msgErroDesbloqueio').innerText = '';
+        if (config.pin && config.pin.trim() !== '') {
+            telaTrancada = true;
+            document.getElementById('telaBloqueioInatividade').classList.remove('escondido');
+            document.getElementById('inputDesbloqueioInatividade').value = '';
+            document.getElementById('msgErroDesbloqueio').innerText = '';
+        }
+    } catch (e) {
+        console.warn("Não foi possível verificar PIN para auto-lock:", e);
     }
 }
 
 // Ouve as ações do usuário (clique, mouse, teclado, toque na tela, rolagem)
-['mousemove', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+// Usa mousedown em vez de mousemove para não resetar com tremores do trackpad
+['mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
     document.addEventListener(evt, resetarTimerInatividade);
 });
 
@@ -2812,7 +3556,7 @@ document.getElementById('btnDesbloquearInatividade')?.addEventListener('click', 
     const config = snapConfig.val() || {};
     const tentativa = document.getElementById('inputDesbloqueioInatividade').value;
 
-    if (tentativa === config.pin) {
+    if (obfuscatePIN(tentativa) === config.pin) {
         telaTrancada = false;
         document.getElementById('telaBloqueioInatividade').classList.add('escondido');
         resetarTimerInatividade(); // Volta a contar os 5 minutos
@@ -2902,4 +3646,13 @@ caixaDeTexto.addEventListener('dragend', () => {
         nodeArrastadoNativo = null;
     }
     window.arrastandoNativo = false;
+});
+
+// ==========================================
+// PROTEÇÃO: Aviso ao fechar aba com edições não salvas
+// ==========================================
+window.addEventListener('beforeunload', (e) => {
+    if (cadernoAtualId && caixaDeTexto && caixaDeTexto.innerHTML !== (window.ultimoTextoSalvo || '')) {
+        e.preventDefault();
+    }
 });
