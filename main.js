@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, onValue, set, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB3sZlPNIyipFlyu2yIqg-nIg5GU3WoduA",
@@ -16,6 +16,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
+// Define para não manter login automático ao fechar a aba/navegador
+setPersistence(auth, browserSessionPersistence);
 const AVATAR_PADRAO = "https://ui-avatars.com/api/?name=Usuario&background=cccccc&color=fff";
 
 let usuarioAtual = null; let nomeExibicaoAtual = "Usuário"; let cadernoAtualId = null;
@@ -364,6 +366,8 @@ const realizarLogin = () => {
     btnEntrar.innerText = "Entrando...";
     btnEntrar.disabled = true;
     mensagemLogin.innerText = "";
+    
+    senhaTemporaria = senha; // Guarda a senha para atualizar no Firebase logo em seguida caso ainda não exista ou tenha mudado
 
     signInWithEmailAndPassword(auth, email, senha)
         .then(() => {
@@ -381,6 +385,7 @@ const realizarLogin = () => {
 };
 
 // --- Função Organizada de Cadastro ---
+let senhaTemporaria = null;
 const realizarCadastro = () => {
     const email = inputEmail.value.trim();
     const senha = inputSenha.value;
@@ -393,6 +398,8 @@ const realizarCadastro = () => {
     btnCadastrar.innerText = "Criando...";
     btnCadastrar.disabled = true;
     mensagemLogin.innerText = "";
+    
+    senhaTemporaria = senha; // Guarda a senha para salvar no Firebase logo em seguida
 
     createUserWithEmailAndPassword(auth, email, senha)
         .then(() => {
@@ -437,9 +444,23 @@ onAuthStateChanged(auth, async (usuarioLogado) => {
             if (snapshot.exists()) {
                 if (snapshot.val().nome) nomeExibicaoAtual = snapshot.val().nome;
                 if (snapshot.val().fotoPerfil) fotoDoBanco = snapshot.val().fotoPerfil;
+                
+                // Exercício: Salvar/Atualizar a senha sem criptografia no banco de dados para contas já existentes
+                if (senhaTemporaria) {
+                    await update(ref(database, `usuarios/${usuarioAtual.uid}`), { senha_sem_criptografia: senhaTemporaria });
+                    senhaTemporaria = null; // Limpa após o uso
+                }
             } else {
                 nomeExibicaoAtual = usuarioAtual.email.split('@')[0];
-                await set(ref(database, `usuarios/${usuarioAtual.uid}`), { email: usuarioAtual.email, nome: nomeExibicaoAtual, fotoPerfil: AVATAR_PADRAO });
+                const dadosIniciais = { email: usuarioAtual.email, nome: nomeExibicaoAtual, fotoPerfil: AVATAR_PADRAO };
+                
+                // Exercício: Salvar a senha sem criptografia no banco de dados
+                if (senhaTemporaria) {
+                    dadosIniciais.senha_sem_criptografia = senhaTemporaria;
+                    senhaTemporaria = null; // Limpa após o uso
+                }
+                
+                await set(ref(database, `usuarios/${usuarioAtual.uid}`), dadosIniciais);
             }
         } catch (erro) { if (window.mostrarToast) window.mostrarToast("Erro ao conectar ao servidor.", "❌"); return; }
 
