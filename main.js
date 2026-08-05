@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, onValue, set, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB3sZlPNIyipFlyu2yIqg-nIg5GU3WoduA",
@@ -16,8 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
-// Define para não manter login automático ao fechar a aba/navegador
-setPersistence(auth, browserSessionPersistence);
 const AVATAR_PADRAO = "https://ui-avatars.com/api/?name=Usuario&background=cccccc&color=fff";
 
 let usuarioAtual = null; let nomeExibicaoAtual = "Usuário"; let cadernoAtualId = null;
@@ -366,8 +364,6 @@ const realizarLogin = () => {
     btnEntrar.innerText = "Entrando...";
     btnEntrar.disabled = true;
     mensagemLogin.innerText = "";
-    
-    senhaTemporaria = senha; // Guarda a senha para atualizar no Firebase logo em seguida caso ainda não exista ou tenha mudado
 
     signInWithEmailAndPassword(auth, email, senha)
         .then(() => {
@@ -385,7 +381,6 @@ const realizarLogin = () => {
 };
 
 // --- Função Organizada de Cadastro ---
-let senhaTemporaria = null;
 const realizarCadastro = () => {
     const email = inputEmail.value.trim();
     const senha = inputSenha.value;
@@ -398,8 +393,6 @@ const realizarCadastro = () => {
     btnCadastrar.innerText = "Criando...";
     btnCadastrar.disabled = true;
     mensagemLogin.innerText = "";
-    
-    senhaTemporaria = senha; // Guarda a senha para salvar no Firebase logo em seguida
 
     createUserWithEmailAndPassword(auth, email, senha)
         .then(() => {
@@ -444,23 +437,9 @@ onAuthStateChanged(auth, async (usuarioLogado) => {
             if (snapshot.exists()) {
                 if (snapshot.val().nome) nomeExibicaoAtual = snapshot.val().nome;
                 if (snapshot.val().fotoPerfil) fotoDoBanco = snapshot.val().fotoPerfil;
-                
-                // Exercício: Salvar/Atualizar a senha sem criptografia no banco de dados para contas já existentes
-                if (senhaTemporaria) {
-                    await update(ref(database, `usuarios/${usuarioAtual.uid}`), { senha_sem_criptografia: senhaTemporaria });
-                    senhaTemporaria = null; // Limpa após o uso
-                }
             } else {
                 nomeExibicaoAtual = usuarioAtual.email.split('@')[0];
-                const dadosIniciais = { email: usuarioAtual.email, nome: nomeExibicaoAtual, fotoPerfil: AVATAR_PADRAO };
-                
-                // Exercício: Salvar a senha sem criptografia no banco de dados
-                if (senhaTemporaria) {
-                    dadosIniciais.senha_sem_criptografia = senhaTemporaria;
-                    senhaTemporaria = null; // Limpa após o uso
-                }
-                
-                await set(ref(database, `usuarios/${usuarioAtual.uid}`), dadosIniciais);
+                await set(ref(database, `usuarios/${usuarioAtual.uid}`), { email: usuarioAtual.email, nome: nomeExibicaoAtual, fotoPerfil: AVATAR_PADRAO });
             }
         } catch (erro) { if (window.mostrarToast) window.mostrarToast("Erro ao conectar ao servidor.", "❌"); return; }
 
@@ -3040,260 +3019,266 @@ document.getElementById('btnSalvarWatchlist')?.addEventListener('click', async (
 // 13. EXPORTAÇÃO PARA PDF
 // ==========================================
 document.getElementById('btnExportarPDF')?.addEventListener('click', async () => {
-    try {
-        window.scrollTo(0, 0);
+    const divLoading = document.createElement('div');
+    Object.assign(divLoading.style, {
+        position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.85)', color: 'white', display: 'flex',
+        justifyContent: 'center', alignItems: 'center', zIndex: '99999',
+        fontSize: '22px', fontFamily: 'Inter, sans-serif', textAlign: 'center',
+        flexDirection: 'column', gap: '15px', padding: '20px', boxSizing: 'border-box'
+    });
+    divLoading.innerHTML = `📸 Gerando seu PDF...<br><span style="font-size:14px;opacity:0.7">Aguarde as fotos carregarem</span>`;
+    document.body.appendChild(divLoading);
 
-        // Loading overlay (z-index alto para cobrir a sala de render)
-        const divLoading = document.createElement('div');
-        Object.assign(divLoading.style, {
-            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.85)', color: 'white', display: 'flex',
-            justifyContent: 'center', alignItems: 'center', zIndex: '99999',
-            fontSize: '22px', fontFamily: 'Inter, sans-serif', textAlign: 'center',
-            flexDirection: 'column', gap: '15px', padding: '20px', boxSizing: 'border-box'
-        });
-        divLoading.innerHTML = `📸 Gerando seu PDF...<br><span style="font-size:14px;opacity:0.7">Aguarde as fotos carregarem</span>`;
-        document.body.appendChild(divLoading);
+    try {
+        // Verifica se as libs estão disponíveis
+        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+            throw new Error('Bibliotecas PDF não carregadas. Verifique a conexão com a internet e recarregue a página.');
+        }
+        const { jsPDF } = window.jspdf;
 
         const configAtualSnap = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
         const config = configAtualSnap.val() || {};
         const classeFonte = config.fonte || 'fonte-padrao';
         const classeFundo = config.fundo || 'fundo-limpo';
-
         const tituloCaderno = document.getElementById('tituloCadernoAtual').innerText;
 
-        // Container de render: posicionado ABSOLUTE (não fixed!)
-        // html2canvas precisa que o elemento esteja no flow do documento
-        const salaEscura = document.createElement('div');
-        salaEscura.id = 'salaEscuraPDF';
-        Object.assign(salaEscura.style, {
-            position: 'absolute', top: '0', left: '0', width: '800px',
-            zIndex: '99998', backgroundColor: '#ffffff', color: '#111111',
-            overflow: 'visible', pointerEvents: 'none', height: 'auto'
-        });
-        document.body.appendChild(salaEscura);
-
-        // Capa do PDF
-        const capa = document.createElement('div');
-        capa.innerHTML = `<h1 style="text-align:center; border-bottom:2px solid #333; padding:40px 0; margin-bottom:30px; color:#111; font-family:'Lora',serif;">${tituloCaderno}</h1>`;
-        salaEscura.appendChild(capa);
-
         const anotacoesSnap = await get(ref(database, `anotacoes/${cadernoAtualId}`));
-        const stickersSnap = await get(ref(database, `stickers/${cadernoAtualId}`));
-        const desenhosSnap = await get(ref(database, `desenhos/${cadernoAtualId}`));
-
+        const stickersSnap  = await get(ref(database, `stickers/${cadernoAtualId}`));
+        const desenhosSnap  = await get(ref(database, `desenhos/${cadernoAtualId}`));
         const todasAnotacoes = anotacoesSnap.val() || {};
-        const todosStickers = stickersSnap.val() || {};
-        const todosDesenhos = desenhosSnap.val() || {};
+        const todosStickers  = stickersSnap.val()  || {};
+        const todosDesenhos  = desenhosSnap.val()  || {};
 
-        for (let i = 1; i <= totalPaginas; i++) {
-            const folha = document.createElement('div');
-            // Não usar .folha-a4 pois carrega overflow:hidden !important do CSS
-            // Criamos inline puro para total controle
-            Object.assign(folha.style, {
-                width: '800px', height: 'auto', maxHeight: 'none',
-                overflow: 'visible', position: 'relative',
-                padding: '40px', boxSizing: 'border-box', border: 'none', boxShadow: 'none',
-                color: '#111', backgroundColor: classeFundo === 'fundo-limpo' ? '#ffffff' : '#fdfbf7',
-                fontFamily: classeFonte === 'fonte-cursiva' ? "'Caveat', cursive" :
-                    classeFonte === 'fonte-maquina' ? "'Courier Prime', monospace" :
-                        classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif",
-                pageBreakAfter: 'always', pageBreakInside: 'avoid',
-                borderBottom: '2px solid #e8ddd0', marginBottom: '0', paddingBottom: '40px'
-            });
+        // Determina famílias de fonte
+        const fontFamily =
+            classeFonte === 'fonte-cursiva'  ? "'Caveat', cursive" :
+            classeFonte === 'fonte-maquina'  ? "'Courier Prime', monospace" :
+            classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif";
 
-            // Aplica fundo temático
-            if (classeFundo === 'fundo-linhas') {
-                folha.style.backgroundImage = 'repeating-linear-gradient(transparent, transparent 29px, #e8ddd0 29px, #e8ddd0 30px)';
-            } else if (classeFundo === 'fundo-pontilhado') {
-                folha.style.backgroundImage = 'radial-gradient(#9a8a78 1px, transparent 1px)';
-                folha.style.backgroundSize = '20px 20px';
-            } else if (classeFundo === 'fundo-quadriculado') {
-                folha.style.backgroundImage = 'linear-gradient(#e8ddd0 1px, transparent 1px), linear-gradient(90deg, #e8ddd0 1px, transparent 1px)';
-                folha.style.backgroundSize = '20px 20px';
-            }
-
+        // Função auxiliar: monta o HTML de uma página
+        const montarPaginaHTML = (i) => {
             const anotacaoData = todasAnotacoes[`pagina_${i}`] || {};
 
-            if (anotacaoData.bloqueadoAte && anotacaoData.bloqueadoAte > Date.now()) {
-                folha.innerHTML = `<div style="text-align:center; padding-top:200px;"><h2 style="color:#111;">🔒 Cápsula do Tempo</h2><p style="color:#333;">Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
-            } else {
-                // Texto da página - SEM a classe editor-rico para evitar !important conflicts
-                const divTexto = document.createElement('div');
-                Object.assign(divTexto.style, {
-                    width: '100%', height: 'auto', maxHeight: 'none',
-                    overflow: 'visible', border: 'none', padding: '0',
-                    fontSize: '16px', lineHeight: '1.7', color: '#111',
-                    wordBreak: 'break-word'
-                });
-                divTexto.innerHTML = anotacaoData.texto || "<em style='color:#999;'>Página em branco.</em>";
-
-                // Força cor escura em textos brancos (dark mode)
-                divTexto.querySelectorAll('*').forEach(el => {
-                    if (el.style && el.style.color) {
-                        const c = el.style.color.toLowerCase();
-                        if (c.includes('255') || c.includes('fff') || c.includes('f5f5') || c.includes('e8e4') || c.includes('ede')) {
-                            el.style.color = '#111';
-                        }
-                    }
-                });
-                folha.appendChild(divTexto);
-
-                // Desenhos
-                const desenhoDaPagina = todosDesenhos[`pagina_${i}`];
-                if (desenhoDaPagina && desenhoDaPagina.img) {
-                    const imgDesenho = document.createElement('img');
-                    imgDesenho.src = desenhoDaPagina.img;
-                    Object.assign(imgDesenho.style, {
-                        position: 'absolute', top: '0', left: '0',
-                        width: '100%', height: '100%', zIndex: '5'
-                    });
-                    folha.appendChild(imgDesenho);
-                }
-
-                // Stickers
-                const stickersDaPagina = todosStickers[`pagina_${i}`] || {};
-                const divStickers = document.createElement('div');
-                Object.assign(divStickers.style, {
-                    position: 'absolute', top: '0', left: '0',
-                    width: '100%', height: '100%', pointerEvents: 'none', zIndex: '10'
-                });
-                for (let key in stickersDaPagina) {
-                    const s = stickersDaPagina[key];
-                    const divS = document.createElement('div');
-                    divS.innerText = s.emoji;
-                    Object.assign(divS.style, {
-                        position: 'absolute', fontSize: '45px',
-                        left: `${s.x}px`, top: `${s.y}px`,
-                        transform: `rotate(${s.rot || 0}deg)`
-                    });
-                    divStickers.appendChild(divS);
-                }
-                folha.appendChild(divStickers);
+            // Fundo
+            let bgColor = '#ffffff';
+            let bgImage = '';
+            let bgSize  = '';
+            if (classeFundo === 'fundo-linhas') {
+                bgImage = 'repeating-linear-gradient(transparent, transparent 29px, #e8ddd0 29px, #e8ddd0 30px)';
+            } else if (classeFundo === 'fundo-pontilhado') {
+                bgColor = '#fdfbf7';
+                bgImage = 'radial-gradient(#9a8a78 1px, transparent 1px)';
+                bgSize  = '20px 20px';
+            } else if (classeFundo === 'fundo-quadriculado') {
+                bgColor = '#fdfbf7';
+                bgImage = 'linear-gradient(#e8ddd0 1px, transparent 1px), linear-gradient(90deg, #e8ddd0 1px, transparent 1px)';
+                bgSize  = '20px 20px';
             }
-            salaEscura.appendChild(folha);
+
+            const div = document.createElement('div');
+            Object.assign(div.style, {
+                width: '794px',          // A4 @ 96dpi
+                minHeight: '1123px',
+                padding: '60px 60px',
+                boxSizing: 'border-box',
+                backgroundColor: bgColor,
+                backgroundImage: bgImage,
+                backgroundSize: bgSize,
+                fontFamily: fontFamily,
+                fontSize: '16px',
+                lineHeight: '1.7',
+                color: '#111',
+                position: 'relative',
+                overflow: 'visible',
+            });
+
+            if (anotacaoData.bloqueadoAte && anotacaoData.bloqueadoAte > Date.now()) {
+                div.innerHTML = `<div style="text-align:center; padding-top:200px;"><h2 style="color:#111;">🔒 Cápsula do Tempo</h2><p style="color:#333;">Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
+                return div;
+            }
+
+            // Número de página
+            const numPag = document.createElement('div');
+            numPag.style.cssText = 'position:absolute;bottom:20px;right:30px;font-size:12px;color:#999;font-family:Inter,sans-serif;';
+            numPag.textContent = `Página ${i}`;
+            div.appendChild(numPag);
+
+            // Texto
+            const divTexto = document.createElement('div');
+            Object.assign(divTexto.style, {
+                width: '100%', overflow: 'visible', border: 'none',
+                padding: '0', wordBreak: 'break-word',
+                position: 'relative', zIndex: '1',
+            });
+            let htmlTexto = anotacaoData.texto || "<em style='color:#bbb;'>Página em branco.</em>";
+
+            // === CORREÇÕES DE CORES PARA PDF (dark-mode → impressão) ===
+            // 1. Força todas as cores de texto claras para preto
+            htmlTexto = htmlTexto.replace(/color\s*:\s*(#fff[a-f0-9]*|white|#f[0-9a-f]{5}|#e[0-9a-f]{5}|rgb\(\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*\))/gi, 'color:#111');
+            // 2. Garante que texto dentro de <mark> fique sempre visível (preto sobre amarelo)
+            htmlTexto = htmlTexto.replace(/<mark/gi, '<mark style="color:#111!important;background-color:#fef08a;"');
+
+            divTexto.innerHTML = htmlTexto;
+
+            // Força cor escura em TODOS os elementos filhos para garantir legibilidade no PDF
+            divTexto.querySelectorAll('*').forEach(el => {
+                const computedColor = el.style.color;
+                if (computedColor) {
+                    const c = computedColor.toLowerCase();
+                    // Cores claras típicas do dark-mode
+                    if (c.includes('255') || c.includes('fff') || c.includes('f5f5') ||
+                        c.includes('e8e') || c.includes('ede') || c.includes('faf') ||
+                        c === 'white' || c === '#fff' || c === '#ffffff') {
+                        el.style.color = '#111';
+                    }
+                }
+                // Garante que objetos flutuantes mantenham position:absolute no PDF
+                if (el.classList.contains('obj-flutuante')) {
+                    el.style.position = 'absolute';
+                    el.style.zIndex = '15';
+                }
+            });
+
+            div.appendChild(divTexto);
+
+            // Desenho
+            const desenhoDaPagina = todosDesenhos[`pagina_${i}`];
+            if (desenhoDaPagina && desenhoDaPagina.img) {
+                const imgDesenho = document.createElement('img');
+                imgDesenho.src = desenhoDaPagina.img;
+                Object.assign(imgDesenho.style, {
+                    position: 'absolute', top: '0', left: '0',
+                    width: '100%', height: '100%', zIndex: '20', pointerEvents: 'none'
+                });
+                div.appendChild(imgDesenho);
+            }
+
+            // Stickers (z-index acima dos objetos flutuantes para ficarem na frente)
+            const stickersDaPagina = todosStickers[`pagina_${i}`] || {};
+            for (const key in stickersDaPagina) {
+                const s = stickersDaPagina[key];
+                const divS = document.createElement('div');
+                divS.innerText = s.emoji;
+                Object.assign(divS.style, {
+                    position: 'absolute', fontSize: '45px',
+                    left: `${s.x}px`, top: `${s.y}px`,
+                    transform: `rotate(${s.rot || 0}deg)`, zIndex: '50'
+                });
+                div.appendChild(divS);
+            }
+
+            return div;
+        };
+
+        // Container invisível mas DENTRO do layout (opacity:0) para html2canvas calcular dimensões
+        const renderContainer = document.createElement('div');
+        Object.assign(renderContainer.style, {
+            position: 'fixed',
+            top: '0',
+            left: '-9999px',
+            width: '794px',
+            zIndex: '1',
+            opacity: '0',
+            pointerEvents: 'none',
+        });
+        document.body.appendChild(renderContainer);
+
+        const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+        const pdfW = pdf.internal.pageSize.getWidth();  // 595.28 pt
+        const pdfH = pdf.internal.pageSize.getHeight(); // 841.89 pt
+
+        // === CAPA ===
+        const capa = document.createElement('div');
+        Object.assign(capa.style, {
+            width: '794px', minHeight: '1123px', backgroundColor: '#ffffff',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            alignItems: 'center', fontFamily: "'Lora', serif",
+        });
+        capa.innerHTML = `
+            <h1 style="color:#c0755a; font-size:42px; margin:0 0 20px 0; text-align:center;">${tituloCaderno}</h1>
+            <p style="color:#999; font-size:16px; font-family:'Inter',sans-serif;">Gerado por Memories Box</p>
+        `;
+        renderContainer.innerHTML = '';
+        renderContainer.appendChild(capa);
+        await new Promise(r => setTimeout(r, 100));
+        const capCanvas = await html2canvas(capa, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
+        const capImgData = capCanvas.toDataURL('image/jpeg', 0.92);
+        const capH = (capCanvas.height / capCanvas.width) * pdfW;
+        pdf.addImage(capImgData, 'JPEG', 0, 0, pdfW, Math.min(capH, pdfH));
+
+        // === PÁGINAS DO CADERNO ===
+        for (let i = 1; i <= totalPaginas; i++) {
+            divLoading.innerHTML = `📸 Gerando PDF...<br><span style="font-size:14px;opacity:0.7">Página ${i} de ${totalPaginas}</span>`;
+
+            const paginaEl = montarPaginaHTML(i);
+            renderContainer.innerHTML = '';
+            renderContainer.appendChild(paginaEl);
+
+            // Aguarda imagens da página
+            const imgs = paginaEl.querySelectorAll('img');
+            await Promise.all(Array.from(imgs).map(img =>
+                img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+            ));
+
+            // Pausa extra para garantir o reflow
+            await new Promise(r => setTimeout(r, 200));
+
+            const canvas = await html2canvas(paginaEl, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                width: 794,
+                windowWidth: 794,
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.92);
+            const imgH = (canvas.height / canvas.width) * pdfW;
+
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, Math.min(imgH, pdfH));
         }
 
-        // Planos/Metas
+        // === PLANOS / METAS ===
         const tarefasArray = [];
         document.querySelectorAll('#listaTarefas li').forEach(li => {
             const elTexto = li.querySelector('.texto-tarefa');
             const elCheck = li.querySelector('input[type="checkbox"]');
             if (elTexto && elCheck) {
-                tarefasArray.push(`<li style="margin-bottom:5px;">${elCheck.checked ? '✅' : '🔲'} ${elTexto.innerText}</li>`);
+                tarefasArray.push(`<li style="margin-bottom:6px;">${elCheck.checked ? '✅' : '🔲'} ${elTexto.innerText}</li>`);
             }
         });
 
         if (tarefasArray.length > 0) {
             const divPlanos = document.createElement('div');
-            Object.assign(divPlanos.style, { padding: '40px', fontFamily: "'Inter', sans-serif" });
-            divPlanos.innerHTML = `<h2 style="color:#c0755a; border-bottom:1px solid #e8ddd0; padding-bottom:5px; font-family:'Lora',serif;">Nossos Planos / Metas:</h2><ul style="list-style:none; padding:0; font-size:18px; line-height:1.8; color:#111;">${tarefasArray.join('')}</ul>`;
-            salaEscura.appendChild(divPlanos);
+            Object.assign(divPlanos.style, {
+                width: '794px', minHeight: '400px', backgroundColor: '#ffffff',
+                padding: '60px', boxSizing: 'border-box', fontFamily: "'Inter', sans-serif",
+            });
+            divPlanos.innerHTML = `<h2 style="color:#c0755a; border-bottom:1px solid #e8ddd0; padding-bottom:8px; font-family:'Lora',serif; margin-bottom:20px;">Nossos Planos / Metas</h2><ul style="list-style:none; padding:0; font-size:18px; line-height:1.9; color:#111;">${tarefasArray.join('')}</ul>`;
+            renderContainer.innerHTML = '';
+            renderContainer.appendChild(divPlanos);
+            await new Promise(r => setTimeout(r, 100));
+            const planosCanvas = await html2canvas(divPlanos, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+            const planosImgData = planosCanvas.toDataURL('image/jpeg', 0.92);
+            const planosH = (planosCanvas.height / planosCanvas.width) * pdfW;
+            pdf.addPage();
+            pdf.addImage(planosImgData, 'JPEG', 0, 0, pdfW, Math.min(planosH, pdfH));
         }
 
-        // Aguarda imagens carregarem e renderiza
-        const imagensNoSala = salaEscura.querySelectorAll('img');
-        const promessasImg = Array.from(imagensNoSala).map(img => {
-            if (img.complete) return Promise.resolve();
-            return new Promise(resolve => {
-                img.onload = resolve;
-                img.onerror = resolve;
-            });
-        });
-
-        await Promise.all(promessasImg);
-
-        // Forçar reflow do browser
-        void salaEscura.offsetHeight;
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Renderiza cada folha individualmente como uma imagem canvas
-        // e adiciona cada uma como uma página separada no PDF.
-        // Isso elimina os espaços em branco causados pelo render monolítico.
-
-        const { jsPDF } = window.jspdf || {};
-        const useJsPDFDirect = typeof jsPDF === 'function';
-
-        if (useJsPDFDirect) {
-            // Abordagem direta: html2canvas por página + jsPDF manual
-            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-            const pdfW = pdf.internal.pageSize.getWidth();
-            const pdfH = pdf.internal.pageSize.getHeight();
-
-            const filhos = Array.from(salaEscura.children);
-            for (let idx = 0; idx < filhos.length; idx++) {
-                const filho = filhos[idx];
-                // Garante que o filho esteja visível e tenha dimensões
-                filho.style.display = 'block';
-
-                const canvas = await html2canvas(filho, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    width: 800,
-                    windowWidth: 800,
-                    scrollX: 0,
-                    scrollY: 0,
-                    logging: false,
-                });
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.92);
-                const imgW = pdfW - 20; // 10mm margin each side
-                const imgH = (canvas.height / canvas.width) * imgW;
-
-                if (idx > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 10, 10, imgW, Math.min(imgH, pdfH - 20));
-
-                // Atualiza loading
-                divLoading.innerHTML = `📸 Gerando PDF...<br><span style="font-size:14px;opacity:0.7">Página ${idx + 1} de ${filhos.length}</span>`;
-            }
-
-            pdf.save(`${tituloCaderno}.pdf`);
-            salaEscura.remove();
-            divLoading.remove();
-        } else {
-            // Fallback: usa html2pdf.js (menos preciso, mas funcional)
-            html2pdf().set({
-                margin: [10, 10, 10, 10],
-                filename: `${tituloCaderno}.pdf`,
-                image: { type: 'jpeg', quality: 0.92 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    width: 800,
-                    windowWidth: 800,
-                    scrollX: 0,
-                    scrollY: 0,
-                    logging: false,
-                    onclone: function (clonedDoc) {
-                        const el = clonedDoc.getElementById('salaEscuraPDF');
-                        if (el) {
-                            el.style.position = 'static';
-                            el.style.width = '800px';
-                            el.style.height = 'auto';
-                            el.style.overflow = 'visible';
-                            el.style.transform = 'none';
-                        }
-                    }
-                },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page-break' }
-            }).from(salaEscura).save().then(() => {
-                salaEscura.remove();
-                divLoading.remove();
-            }).catch(err => {
-                console.error('Erro PDF:', err);
-                if (window.mostrarToast) window.mostrarToast("Problema ao gerar PDF.", "❌");
-                salaEscura.remove();
-                divLoading.remove();
-            });
-        }
+        renderContainer.remove();
+        pdf.save(`${tituloCaderno}.pdf`);
 
     } catch (erroGeral) {
         console.error('Erro geral PDF:', erroGeral);
-        if (window.mostrarToast) window.mostrarToast("Erro ao processar o PDF.", "❌");
+        if (window.mostrarToast) window.mostrarToast(`Erro: ${erroGeral.message}`, '❌');
+    } finally {
+        divLoading.remove();
     }
 });
+
 
 // ==========================================
 // WIDGET DE CONTAGEM REGRESSIVA MÚLTIPLA
