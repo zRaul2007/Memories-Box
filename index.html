@@ -426,9 +426,16 @@
                 </div>
 
                 <hr>
-                <label>🔒 Coloque uma senha para proteger caderno:</label>
-                <input type="password" id="inputPinCaderno" autocomplete="new-password" data-lpignore="true"
-                    placeholder="Nova senha (vazio = manter atual)" style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 14px;">🔒 Proteger caderno com senha</label>
+                    <label class="switch"><input type="checkbox" id="toggleProtegerSenha"><span
+                            class="slider"></span></label>
+                </div>
+
+                <div id="campoPinCaderno" class="escondido">
+                    <input type="password" id="inputPinCaderno" autocomplete="new-password" data-lpignore="true"
+                        placeholder="Nova senha (vazio = manter atual)" style="margin-bottom: 15px;">
+                </div>
 
                 <button id="btnSalvarConfigCaderno" style="width: 100%; margin-bottom: 10px;">Salvar Estilo</button>
                 <hr>
