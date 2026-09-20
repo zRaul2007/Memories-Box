@@ -1,0 +1,7 @@
+[build]
+  functions = "netlify/functions"
+
+# Ajuste "publish" para a pasta onde fica o seu index.html / build do front-end,
+# se o site não estiver na raiz do repositório.
+# [build]
+#   publish = "."
