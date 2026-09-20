@@ -40,14 +40,30 @@ const canvasDesenho = document.getElementById('camadaDesenho');
 const ctxDesenho = canvasDesenho ? canvasDesenho.getContext('2d') : null;
 
 
-function obfuscatePIN(pin) {
-    return btoa(pin + "_salt_memories");
+// A verificação e a definição de PIN agora acontecem no backend (Netlify
+// Functions), que é quem lê/escreve cadernos/{id}/seguranca — nó que as Regras
+// do Firebase bloqueiam totalmente para o client. O navegador nunca mais vê
+// o hash nem o salt, só manda o PIN em texto puro por HTTPS pra ser conferido.
+
+async function verificarPinNoServidor(cadernoId, pin) {
+    const resp = await fetch('/.netlify/functions/verificar-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cadernoId, pin })
+    });
+    if (!resp.ok) return { valido: false, erro: true };
+    return await resp.json(); // { valido, bloqueado?, tentativasRestantes?, tenteNovamenteEmSegundos? }
 }
 
-function deobfuscatePIN(obfuscated) {
-    try {
-        return atob(obfuscated).replace("_salt_memories", "");
-    } catch (e) { return ""; }
+async function definirPinNoServidor(cadernoId, pin) {
+    const idToken = await auth.currentUser.getIdToken();
+    const resp = await fetch('/.netlify/functions/definir-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cadernoId, pin, idToken })
+    });
+    if (!resp.ok) throw new Error('Falha ao salvar o PIN no servidor');
+    return await resp.json(); // { ok: true }
 }
 function sanitizarHTML(htmlBruto) {
     if (!htmlBruto) return "";
@@ -75,6 +91,19 @@ function sanitizarHTML(htmlBruto) {
     }
 }
 
+// --- SEGURANÇA: escapa valores dinâmicos (nomes, títulos, URLs de foto etc.
+// vindos do Firebase / de outros usuários) antes de interpolar em innerHTML ---
+function escapeHTML(texto) {
+    if (texto === null || texto === undefined) return '';
+    return String(texto).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[c]));
+}
+
 
 // --- NOVO: SISTEMA DE ALERTAS (TOAST) ---
 window.mostrarToast = (mensagem, icone = '✅') => {
@@ -87,7 +116,7 @@ window.mostrarToast = (mensagem, icone = '✅') => {
     }
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span style="font-size: 18px;">${icone}</span> <span>${mensagem}</span>`;
+    toast.innerHTML = `<span style="font-size: 18px;">${escapeHTML(icone)}</span> <span>${escapeHTML(mensagem)}</span>`;
     container.appendChild(toast);
 
     // Animação de entrada
@@ -463,7 +492,7 @@ function vigiarConvites() {
             snapshot.forEach((filho) => {
                 const idConvite = filho.key; const dados = filho.val(); const li = document.createElement('li');
                 li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.alignItems = "center"; li.style.marginBottom = "8px"; li.style.border = "none";
-                li.innerHTML = `<span style="font-size: 14px; color: var(--texto-principal);"><strong>${dados.remetenteNome}</strong> te convidou como <b>${dados.permissao.toUpperCase()}</b> para <em>"${dados.tituloCaderno}"</em></span>`;
+                li.innerHTML = `<span style="font-size: 14px; color: var(--texto-principal);"><strong>${escapeHTML(dados.remetenteNome)}</strong> te convidou como <b>${escapeHTML(dados.permissao.toUpperCase())}</b> para <em>"${escapeHTML(dados.tituloCaderno)}"</em></span>`;
                 const botoes = document.createElement('div');
                 const btnAceitar = document.createElement('button'); btnAceitar.innerText = "✔️ Aceitar"; btnAceitar.className = "btn-pequeno"; btnAceitar.style.backgroundColor = "#4CAF50"; btnAceitar.style.color = "white";
                 const btnRecusar = document.createElement('button'); btnRecusar.innerText = "❌ Recusar"; btnRecusar.className = "btn-pequeno btn-sair";
@@ -505,7 +534,7 @@ function carregarCadernos() {
                 const perm = dados.usuarios_permitidos[usuarioAtual.uid];
                 let icone = perm === 'dono' ? "👑" : perm === 'admin' ? "🛡️" : perm === 'editor' ? "✏️" : "👁️";
 
-                const spanTitulo = document.createElement('span'); spanTitulo.innerHTML = `<strong>${icone} ${dados.titulo}</strong>`;
+                const spanTitulo = document.createElement('span'); spanTitulo.innerHTML = `<strong>${icone} ${escapeHTML(dados.titulo)}</strong>`;
                 const btnAbrir = document.createElement('button'); btnAbrir.innerText = 'Abrir';
                 btnAbrir.addEventListener('click', () => abrirCaderno(id, dados.titulo, perm));
                 li.appendChild(spanTitulo); li.appendChild(btnAbrir); lista.appendChild(li);
@@ -542,7 +571,7 @@ async function abrirCaderno(id, titulo, permissao) {
     const config = snapConfig.val() || {};
 
     // 2. O Loop de Segurança (Se tiver senha)
-    if (config.pin && config.pin.trim() !== '') {
+    if (config.temSenha) {
         let senhaCorreta = false;
 
         while (!senhaCorreta) {
@@ -574,14 +603,22 @@ async function abrirCaderno(id, titulo, permissao) {
 
             if (tentativa === null) return;
 
-            // Verifica a senha usando a função de obfuscation
-            if (obfuscatePIN(tentativa) === config.pin) {
+            // A conferência do PIN e o rate-limit acontecem no backend agora.
+            const resultado = await verificarPinNoServidor(id, tentativa);
+
+            if (resultado.valido) {
                 senhaCorreta = true;
             } else {
                 await new Promise((resolve) => {
                     const modalErro = document.getElementById('modalAcessoNegado');
                     const btnTentar = document.getElementById('btnTentarSenhaNovamente');
                     modalErro.classList.remove('escondido');
+                    const msgErro = document.getElementById('msgAcessoNegado');
+                    if (msgErro) {
+                        msgErro.innerText = resultado.bloqueado
+                            ? `❌ Muitas tentativas erradas. Tente de novo em ${resultado.tenteNovamenteEmSegundos || 300}s.`
+                            : '❌ Senha incorreta! Tente novamente.';
+                    }
                     const onClickTentar = () => {
                         btnTentar.removeEventListener('click', onClickTentar);
                         modalErro.classList.add('escondido');
@@ -686,11 +723,11 @@ document.getElementById('btnVerParticipantes')?.addEventListener('click', async 
             `;
         } else {
             let classeCor = permissao === 'dono' ? 'cargo-dono' : permissao === 'admin' ? 'cargo-admin' : permissao === 'editor' ? 'cargo-editor' : 'cargo-leitor';
-            controlePermissao = `<span class="tag-cargo ${classeCor}">${permissao.toUpperCase()}</span>`;
+            controlePermissao = `<span class="tag-cargo ${classeCor}">${escapeHTML(permissao.toUpperCase())}</span>`;
         }
 
         const divInfo = document.createElement('div'); divInfo.className = "avatar-container"; divInfo.style.flex = "1";
-        divInfo.innerHTML = `<img src="${fotoP}" class="avatar-pequeno"><span>${nomeP} ${controlePermissao}</span>`;
+        divInfo.innerHTML = `<img src="${escapeHTML(fotoP)}" class="avatar-pequeno"><span>${escapeHTML(nomeP)} ${controlePermissao}</span>`;
         li.appendChild(divInfo);
 
         if (souAdminOuDono && permissao !== 'dono' && uid !== usuarioAtual.uid) {
@@ -734,7 +771,7 @@ document.getElementById('btnSairDoCaderno')?.addEventListener('click', async () 
                 if (uid !== usuarioAtual.uid) {
                     const dadosPessoa = usuariosDb[uid] || {};
                     const nome = dadosPessoa.nome || dadosPessoa.email || "Usuário";
-                    select.innerHTML += `<option value="${uid}">${nome}</option>`;
+                    select.innerHTML += `<option value="${escapeHTML(uid)}">${escapeHTML(nome)}</option>`;
                 }
             }
             document.getElementById('modalParticipantes').classList.add('escondido');
@@ -798,12 +835,13 @@ document.getElementById('btnSalvarConfigCaderno')?.addEventListener('click', asy
             mostrarMusica: document.getElementById('toggleModuloMusica').checked,
             mostrarWatchlist: document.getElementById('toggleModuloWatchlist').checked
         };
-        // Só atualiza o PIN se o usuário digitou algo novo (campo vazio = manter senha atual)
-        if (pinValue !== '') {
-            configUpdate.pin = obfuscatePIN(pinValue);
-        }
         await update(ref(database, `cadernos/${cadernoAtualId}/config`), configUpdate);
 
+        // 3. PIN: só mexe se o usuário digitou algo novo (campo vazio = manter senha atual).
+        // Quem grava o hash agora é o backend — o client nunca escreve em cadernos/{id}/seguranca.
+        if (pinValue !== '') {
+            await definirPinNoServidor(cadernoAtualId, pinValue);
+        }
 
         document.getElementById('modalConfigCaderno').classList.add('escondido');
     } catch (erro) {
@@ -2239,11 +2277,11 @@ function embedMusica(link) {
                 // Pegando as duas últimas partes (tipo e id) da URL limpa do Spotify
                 const tipo = pathSegments[pathSegments.length - 2];
                 const id = pathSegments[pathSegments.length - 1];
-                divWidget.innerHTML = `<iframe src="https://open.spotify.com/embed/${tipo}/${id}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+                divWidget.innerHTML = `<iframe src="https://open.spotify.com/embed/${escapeHTML(tipo)}/${escapeHTML(id)}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
             }
         } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
             let idVideo = link.includes('youtu.be') ? link.split('youtu.be/')[1].split('?')[0] : new URL(link).searchParams.get('v');
-            divWidget.innerHTML = `<iframe width="100%" height="200" src="https://www.youtube.com/embed/${idVideo}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            divWidget.innerHTML = `<iframe width="100%" height="200" src="https://www.youtube.com/embed/${escapeHTML(idVideo)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         } else {
             divWidget.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--texto-secundario); font-size: 14px;">Link de música não suportado. Use Spotify ou YouTube.</div>';
         }
@@ -2273,16 +2311,16 @@ function iniciarRotinasDoCaderno() {
                 const uid = filho.key;
                 const dados = filho.val();
 
-                let humorBadge = dados.humor ? `<div class="humor-badge">${dados.humor}</div>` : '';
+                let humorBadge = dados.humor ? `<div class="humor-badge">${escapeHTML(dados.humor)}</div>` : '';
 
                 // Verifica se o usuário está digitando e adiciona a animação de "digitando..." se for o caso
                 let digitandoIndicador = (dados.digitando && uid !== usuarioAtual?.uid)
-                    ? `<div class="status-digitando" title="${dados.nome} está escrevendo...">💬</div>`
+                    ? `<div class="status-digitando" title="${escapeHTML(dados.nome)} está escrevendo...">💬</div>`
                     : '';
 
                 areaOnline.innerHTML += `
-                    <div class="avatar-presenca" title="${dados.nome}">
-                        <img src="${dados.foto}">
+                    <div class="avatar-presenca" title="${escapeHTML(dados.nome)}">
+                        <img src="${escapeHTML(dados.foto)}">
                         <div class="dot-verde"></div>
                         ${humorBadge}
                         ${digitandoIndicador}
@@ -2294,7 +2332,7 @@ function iniciarRotinasDoCaderno() {
                         const cursorDiv = document.createElement('div');
                         cursorDiv.className = 'cursor-alheio';
                         cursorDiv.style.transform = `translate(${dados.cursorX}px, ${dados.cursorY}px)`;
-                        cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: #e91e63;"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${dados.nome.split(' ')[0]}</div>`;
+                        cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: #e91e63;"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${escapeHTML(dados.nome.split(' ')[0])}</div>`;
                         folhaA4Wrapper.appendChild(cursorDiv);
                     }
                 }
@@ -2726,7 +2764,7 @@ function renderizarGridWatchlist(dados) {
 
         const header = document.createElement('div');
         header.className = 'watchlist-card-header';
-        header.innerHTML = `<h4>${item.titulo}</h4><span class="watchlist-tipo-badge ${tipoBadge}">${tipoTexto}</span>`;
+        header.innerHTML = `<h4>${escapeHTML(item.titulo)}</h4><span class="watchlist-tipo-badge ${tipoBadge}">${tipoTexto}</span>`;
         body.appendChild(header);
 
         // Participantes: status + nota de cada um
@@ -2795,7 +2833,7 @@ function renderizarGridWatchlist(dados) {
         const meuNome = meuDado.nome || 'Eu';
         const minhaFoto = meuDado.fotoPerfil || AVATAR_PADRAO;
 
-        minhaRow.innerHTML = `<img src="${minhaFoto}" alt="${meuNome}"><span class="nome-part">${meuNome.split(' ')[0]}</span>`;
+        minhaRow.innerHTML = `<img src="${escapeHTML(minhaFoto)}" alt="${escapeHTML(meuNome)}"><span class="nome-part">${escapeHTML(meuNome.split(' ')[0])}</span>`;
 
         // Meu status (select)
         if (minhaPermissaoAtual !== 'leitor') {
@@ -2840,7 +2878,7 @@ function renderizarGridWatchlist(dados) {
             });
             minhaRow.appendChild(btnNote);
         }
-        
+
         participantesDiv.appendChild(minhaRow);
 
         // Outros participantes
@@ -2856,7 +2894,7 @@ function renderizarGridWatchlist(dados) {
 
             const row = document.createElement('div');
             row.className = 'watchlist-participante-row';
-            row.innerHTML = `<img src="${fotoP}" alt="${nomeP}"><span class="nome-part">${nomeP.split(' ')[0]}</span>`;
+            row.innerHTML = `<img src="${escapeHTML(fotoP)}" alt="${escapeHTML(nomeP)}"><span class="nome-part">${escapeHTML(nomeP.split(' ')[0])}</span>`;
 
             if (statusP) {
                 const statusEmoji = statusP === 'assistindo' ? '▶️' : statusP === 'quero' ? '📌' : '✅';
@@ -2902,7 +2940,7 @@ document.getElementById('btnSalvarAnotacao')?.addEventListener('click', () => {
     const texto = document.getElementById('inputAnotacaoWatchlist').value.trim();
     const itemId = document.getElementById('anotacaoItemId').value;
     const uid = document.getElementById('anotacaoUid').value;
-    
+
     if (itemId && uid && cadernoAtualId) {
         set(ref(database, `watchlist/${cadernoAtualId}/${itemId}/anotacoesParticipantes/${uid}`), texto || null);
         document.getElementById('modalAnotacaoWatchlist').classList.add('escondido');
@@ -2925,7 +2963,7 @@ function abrirModalEditarWatchlist(id, item) {
     document.getElementById('inputTituloWatchlist').value = item.titulo;
     document.getElementById('selectTipoWatchlist').value = item.tipo || 'filme';
     document.getElementById('watchlistEditandoId').value = id;
-    document.getElementById('previewFotoWatchlist').innerHTML = item.foto ? `<img src="${item.foto}" style="max-width:100%;max-height:100px;border-radius:8px;">` : '';
+    document.getElementById('previewFotoWatchlist').innerHTML = item.foto ? `<img src="${escapeHTML(item.foto)}" style="max-width:100%;max-height:100px;border-radius:8px;">` : '';
     fotoWatchlistBase64 = item.foto || '';
     document.getElementById('btnSalvarWatchlist').textContent = 'Salvar Alterações';
     document.getElementById('modalWatchlist').classList.remove('escondido');
@@ -3044,17 +3082,17 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
         const tituloCaderno = document.getElementById('tituloCadernoAtual').innerText;
 
         const anotacoesSnap = await get(ref(database, `anotacoes/${cadernoAtualId}`));
-        const stickersSnap  = await get(ref(database, `stickers/${cadernoAtualId}`));
-        const desenhosSnap  = await get(ref(database, `desenhos/${cadernoAtualId}`));
+        const stickersSnap = await get(ref(database, `stickers/${cadernoAtualId}`));
+        const desenhosSnap = await get(ref(database, `desenhos/${cadernoAtualId}`));
         const todasAnotacoes = anotacoesSnap.val() || {};
-        const todosStickers  = stickersSnap.val()  || {};
-        const todosDesenhos  = desenhosSnap.val()  || {};
+        const todosStickers = stickersSnap.val() || {};
+        const todosDesenhos = desenhosSnap.val() || {};
 
         // Determina famílias de fonte
         const fontFamily =
-            classeFonte === 'fonte-cursiva'  ? "'Caveat', cursive" :
-            classeFonte === 'fonte-maquina'  ? "'Courier Prime', monospace" :
-            classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif";
+            classeFonte === 'fonte-cursiva' ? "'Caveat', cursive" :
+                classeFonte === 'fonte-maquina' ? "'Courier Prime', monospace" :
+                    classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif";
 
         // Função auxiliar: monta o HTML de uma página
         const montarPaginaHTML = (i) => {
@@ -3063,17 +3101,17 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             // Fundo
             let bgColor = '#ffffff';
             let bgImage = '';
-            let bgSize  = '';
+            let bgSize = '';
             if (classeFundo === 'fundo-linhas') {
                 bgImage = 'repeating-linear-gradient(transparent, transparent 29px, #e8ddd0 29px, #e8ddd0 30px)';
             } else if (classeFundo === 'fundo-pontilhado') {
                 bgColor = '#fdfbf7';
                 bgImage = 'radial-gradient(#9a8a78 1px, transparent 1px)';
-                bgSize  = '20px 20px';
+                bgSize = '20px 20px';
             } else if (classeFundo === 'fundo-quadriculado') {
                 bgColor = '#fdfbf7';
                 bgImage = 'linear-gradient(#e8ddd0 1px, transparent 1px), linear-gradient(90deg, #e8ddd0 1px, transparent 1px)';
-                bgSize  = '20px 20px';
+                bgSize = '20px 20px';
             }
 
             const div = document.createElement('div');
@@ -3196,7 +3234,7 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             alignItems: 'center', fontFamily: "'Lora', serif",
         });
         capa.innerHTML = `
-            <h1 style="color:#c0755a; font-size:42px; margin:0 0 20px 0; text-align:center;">${tituloCaderno}</h1>
+            <h1 style="color:#c0755a; font-size:42px; margin:0 0 20px 0; text-align:center;">${escapeHTML(tituloCaderno)}</h1>
             <p style="color:#999; font-size:16px; font-family:'Inter',sans-serif;">Gerado por Memories Box</p>
         `;
         renderContainer.innerHTML = '';
@@ -3247,7 +3285,7 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             const elTexto = li.querySelector('.texto-tarefa');
             const elCheck = li.querySelector('input[type="checkbox"]');
             if (elTexto && elCheck) {
-                tarefasArray.push(`<li style="margin-bottom:6px;">${elCheck.checked ? '✅' : '🔲'} ${elTexto.innerText}</li>`);
+                tarefasArray.push(`<li style="margin-bottom:6px;">${elCheck.checked ? '✅' : '🔲'} ${escapeHTML(elTexto.innerText)}</li>`);
             }
         });
 
@@ -3539,7 +3577,7 @@ async function trancarPorInatividade() {
         const snapConfig = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
         const config = snapConfig.val() || {};
 
-        if (config.pin && config.pin.trim() !== '') {
+        if (config.temSenha) {
             telaTrancada = true;
             document.getElementById('telaBloqueioInatividade').classList.remove('escondido');
             document.getElementById('inputDesbloqueioInatividade').value = '';
@@ -3558,16 +3596,17 @@ async function trancarPorInatividade() {
 
 // A Lógica para Destrancar
 document.getElementById('btnDesbloquearInatividade')?.addEventListener('click', async () => {
-    const snapConfig = await get(ref(database, `cadernos/${cadernoAtualId}/config`));
-    const config = snapConfig.val() || {};
     const tentativa = document.getElementById('inputDesbloqueioInatividade').value;
+    const resultado = await verificarPinNoServidor(cadernoAtualId, tentativa);
 
-    if (obfuscatePIN(tentativa) === config.pin) {
+    if (resultado.valido) {
         telaTrancada = false;
         document.getElementById('telaBloqueioInatividade').classList.add('escondido');
         resetarTimerInatividade(); // Volta a contar os 5 minutos
     } else {
-        document.getElementById('msgErroDesbloqueio').innerText = '❌ Senha incorreta! Tente novamente.';
+        document.getElementById('msgErroDesbloqueio').innerText = resultado.bloqueado
+            ? `❌ Muitas tentativas erradas. Tente de novo em ${resultado.tenteNovamenteEmSegundos || 300}s.`
+            : '❌ Senha incorreta! Tente novamente.';
     }
 });
 
