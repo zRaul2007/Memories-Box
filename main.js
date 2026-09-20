@@ -18,7 +18,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 const AVATAR_PADRAO = "https://ui-avatars.com/api/?name=Usuario&background=cccccc&color=fff";
 
-let usuarioAtual = null; let nomeExibicaoAtual = "Usuário"; let cadernoAtualId = null;
+let usuarioAtual = null; let nomeExibicaoAtual = "Usuário"; let cadernoAtualId = null; let cadernoTinhaSenha = false;
 let minhaPermissaoAtual = "leitor"; let souDonoDoCadernoAtual = false; let souAdminOuDono = false;
 
 let paginaAtual = 1; let totalPaginas = 1;
@@ -723,7 +723,7 @@ document.getElementById('btnVerParticipantes')?.addEventListener('click', async 
             `;
         } else {
             let classeCor = permissao === 'dono' ? 'cargo-dono' : permissao === 'admin' ? 'cargo-admin' : permissao === 'editor' ? 'cargo-editor' : 'cargo-leitor';
-            controlePermissao = `<span class="tag-cargo ${classeCor}">${escapeHTML(permissao.toUpperCase())}</span>`;
+            controlePermissao = `<span class="tag-cargo ${classeCor}">${permissao.toUpperCase()}</span>`;
         }
 
         const divInfo = document.createElement('div'); divInfo.className = "avatar-container"; divInfo.style.flex = "1";
@@ -837,11 +837,25 @@ document.getElementById('btnSalvarConfigCaderno')?.addEventListener('click', asy
         };
         await update(ref(database, `cadernos/${cadernoAtualId}/config`), configUpdate);
 
-        // 3. PIN: só mexe se o usuário digitou algo novo (campo vazio = manter senha atual).
-        // Quem grava o hash agora é o backend — o client nunca escreve em cadernos/{id}/seguranca.
-        if (pinValue !== '') {
-            await definirPinNoServidor(cadernoAtualId, pinValue);
+        // 3. PIN: agora depende do toggle "Proteger com senha", não só de ter digitado algo.
+        // Quem grava/apaga o hash é sempre o backend — o client nunca escreve em seguranca_pins.
+        const protegerAtivo = document.getElementById('toggleProtegerSenha').checked;
+
+        if (protegerAtivo) {
+            if (pinValue !== '') {
+                // Definindo uma senha nova, ou trocando a existente.
+                await definirPinNoServidor(cadernoAtualId, pinValue);
+            } else if (!cadernoTinhaSenha) {
+                // Ligou a proteção agora, mas não digitou nenhuma senha — não dá pra ativar assim.
+                if (window.mostrarToast) window.mostrarToast("Digite uma senha para proteger o caderno.", "⚠️");
+                return;
+            }
+            // protegerAtivo && pinValue === '' && cadernoTinhaSenha → mantém a senha atual, nada a fazer.
+        } else if (cadernoTinhaSenha) {
+            // Desligou a proteção de um caderno que tinha senha → remove.
+            await definirPinNoServidor(cadernoAtualId, '');
         }
+        // !protegerAtivo && !cadernoTinhaSenha → nunca teve senha, nada a fazer.
 
         document.getElementById('modalConfigCaderno').classList.add('escondido');
     } catch (erro) {
@@ -873,6 +887,11 @@ document.getElementById('btnConfigCaderno')?.addEventListener('click', async () 
         toggleMusica.checked = config.mostrarMusica !== false; // default true para retrocompatibilidade
         toggleWatchlist.checked = config.mostrarWatchlist === true; // default false
         document.getElementById('campoMusica').classList.toggle('escondido', !toggleMusica.checked);
+
+        cadernoTinhaSenha = config.temSenha === true;
+        const toggleSenha = document.getElementById('toggleProtegerSenha');
+        toggleSenha.checked = cadernoTinhaSenha;
+        document.getElementById('campoPinCaderno').classList.toggle('escondido', !cadernoTinhaSenha);
 
         const inputPin = document.getElementById('inputPinCaderno');
         if (inputPin) inputPin.value = ''; // Nunca carregar hash — campo sempre começa vazio
@@ -2620,6 +2639,11 @@ const habilitarReordenacaoTarefas = (idListaUl) => {
 // ==========================================
 document.getElementById('toggleModuloMusica')?.addEventListener('change', (e) => {
     document.getElementById('campoMusica').classList.toggle('escondido', !e.target.checked);
+});
+
+document.getElementById('toggleProtegerSenha')?.addEventListener('change', (e) => {
+    document.getElementById('campoPinCaderno').classList.toggle('escondido', !e.target.checked);
+    if (!e.target.checked) document.getElementById('inputPinCaderno').value = '';
 });
 
 // ==========================================
