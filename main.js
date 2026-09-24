@@ -2599,50 +2599,54 @@ function iniciarRotinasDoCaderno() {
 
         if (snap.exists()) {
             snap.forEach(filho => {
-                const uid = filho.key;
-                const dados = filho.val();
-                uidsOnline.add(uid);
+                try {
+                    const uid = filho.key;
+                    const dados = filho.val();
+                    uidsOnline.add(uid);
 
-                let humorBadge = dados.humor ? `<div class="humor-badge">${escapeHTML(dados.humor)}</div>` : '';
+                    let humorBadge = dados.humor ? `<div class="humor-badge">${escapeHTML(dados.humor)}</div>` : '';
 
-                // Verifica se o usuário está digitando e adiciona a animação de "digitando..." se for o caso
-                let digitandoIndicador = (dados.digitando && uid !== usuarioAtual?.uid)
-                    ? `<div class="status-digitando" title="${escapeHTML(dados.nome)} está escrevendo...">💬</div>`
-                    : '';
+                    // Verifica se o usuário está digitando e adiciona a animação de "digitando..." se for o caso
+                    let digitandoIndicador = (dados.digitando && uid !== usuarioAtual?.uid)
+                        ? `<div class="status-digitando" title="${escapeHTML(dados.nome)} está escrevendo...">💬</div>`
+                        : '';
 
-                areaOnline.innerHTML += `
-                    <div class="avatar-presenca" title="${escapeHTML(dados.nome)}">
-                        <img src="${escapeHTML(dados.foto)}" alt="${escapeHTML(dados.nome)}" loading="lazy">
-                        <div class="dot-verde"></div>
-                        ${humorBadge}
-                        ${digitandoIndicador}
-                    </div>`;
+                    areaOnline.innerHTML += `
+                        <div class="avatar-presenca" title="${escapeHTML(dados.nome)}">
+                            <img src="${escapeHTML(dados.foto)}" alt="${escapeHTML(dados.nome)}" loading="lazy">
+                            <div class="dot-verde"></div>
+                            ${humorBadge}
+                            ${digitandoIndicador}
+                        </div>`;
 
-                if (uid !== usuarioAtual?.uid) {
-                    const estaNaMinhaPagina = dados.paginaAtual === paginaAtual;
+                    if (uid !== usuarioAtual?.uid) {
+                        const estaNaMinhaPagina = dados.paginaAtual === paginaAtual;
 
-                    if (estaNaMinhaPagina && dados.cursorX != null && dados.cursorY != null) {
-                        let cursorDiv = cursoresAlheios[uid];
-                        if (!cursorDiv) {
-                            cursorDiv = document.createElement('div');
-                            cursorDiv.className = 'cursor-alheio';
-                            if (prefereMovimentoReduzido()) {
-                                // Desliga só a transição de POSIÇÃO; o fade de opacidade continua suave
-                                cursorDiv.style.transitionProperty = 'opacity';
+                        if (estaNaMinhaPagina && dados.cursorX != null && dados.cursorY != null) {
+                            let cursorDiv = cursoresAlheios[uid];
+                            if (!cursorDiv) {
+                                cursorDiv = document.createElement('div');
+                                cursorDiv.className = 'cursor-alheio';
+                                if (prefereMovimentoReduzido()) {
+                                    // Desliga só a transição de POSIÇÃO; o fade de opacidade continua suave
+                                    cursorDiv.style.transitionProperty = 'opacity';
+                                }
+                                const cor = corDoCursorPorUid(uid);
+                                cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: ${cor};"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${escapeHTML((dados.nome || '').split(' ')[0])}</div>`;
+                                folhaA4Wrapper.appendChild(cursorDiv);
+                                cursoresAlheios[uid] = cursorDiv;
                             }
-                            const cor = corDoCursorPorUid(uid);
-                            cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: ${cor};"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${escapeHTML(dados.nome.split(' ')[0])}</div>`;
-                            folhaA4Wrapper.appendChild(cursorDiv);
-                            cursoresAlheios[uid] = cursorDiv;
+                            cursorDiv.style.transform = `translate(${dados.cursorX}px, ${dados.cursorY}px)`;
+                            cursorDiv.style.opacity = '1';
+                            ultimoMovimentoCursor[uid] = Date.now();
+                        } else if (cursoresAlheios[uid]) {
+                            cursoresAlheios[uid].remove();
+                            delete cursoresAlheios[uid];
+                            delete ultimoMovimentoCursor[uid];
                         }
-                        cursorDiv.style.transform = `translate(${dados.cursorX}px, ${dados.cursorY}px)`;
-                        cursorDiv.style.opacity = '1';
-                        ultimoMovimentoCursor[uid] = Date.now();
-                    } else if (cursoresAlheios[uid]) {
-                        cursoresAlheios[uid].remove();
-                        delete cursoresAlheios[uid];
-                        delete ultimoMovimentoCursor[uid];
                     }
+                } catch (erroPresenca) {
+                    console.warn('Entrada de presença malformada, ignorando:', filho.key, erroPresenca);
                 }
             });
             Object.keys(cursoresAlheios).forEach(uid => {
@@ -2819,10 +2823,6 @@ function iniciarRotinasDoCaderno() {
             if (refMinhaPresenca) update(refMinhaPresenca, { cursorX: null, cursorY: null });
         });
     }
-
-    folhaA4Wrapper?.addEventListener('mouseleave', () => {
-        if (refMinhaPresenca) update(refMinhaPresenca, { cursorX: null, cursorY: null });
-    });
 
     // ==========================================
     // DETECTOR DE QUEDA DE INTERNET
