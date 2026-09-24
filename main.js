@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, onValue, set, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB3sZlPNIyipFlyu2yIqg-nIg5GU3WoduA",
@@ -17,6 +18,16 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 const AVATAR_PADRAO = "https://ui-avatars.com/api/?name=Usuario&background=cccccc&color=fff";
+
+// Chave pública da API do TMDB (The Movie Database). Diferente de uma chave de
+// backend, essa fica visível no client de propósito: é de uso público, limitada
+// por taxa, e não dá acesso a nada sensível — é assim que a própria TMDB espera
+// que apps client-side a usem. Gere a sua em https://www.themoviedb.org/settings/api
+const TMDB_API_KEY = '85097c5ce3c7746a016cc7bad093c261';
+const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p/w342'; // tamanho médio: bom pra miniatura e pra capa do card
+
+// Chave pública VAPID — gerada em Configurações do Projeto → Cloud Messaging, no Firebase Console
+const VAPID_KEY = 'BGWiTAPhnh0eW3lwU_YKroAwMTmUcDBZQwT4233jSN_onxBHvTnIUqF6TtBiRzPw2UjPBkAH_Zs5_snyouoSspM';
 
 let usuarioAtual = null; let nomeExibicaoAtual = "Usuário"; let cadernoAtualId = null; let cadernoTinhaSenha = false;
 let minhaPermissaoAtual = "leitor"; let souDonoDoCadernoAtual = false; let souAdminOuDono = false;
@@ -183,18 +194,25 @@ function comprimirImagemCanvas(file, maxLargura = 800, qualidade = 0.7) {
 // EFEITOS SONOROS (Motor de UX de Áudio)
 // ==========================================
 const sonsApp = {
-    pagina: new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3'), // Som de folha virando
-    camera: new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_34b2203ddb.mp3')  // Som de câmera analógica
+    pagina: new Audio('audios/pagina.mp3'), // Som de folha virando
+    camera: new Audio('audios/camera.mp3'),  // Som de câmera analógica
+    sticker: new Audio('audios/sticker.mp3'),
+    modal: new Audio('audios/modal.mp3'),
+    tarefaConcluida: new Audio('audios/tarefa.mp3')
 };
 // Deixando o volume agradável e não invasivo
 sonsApp.pagina.volume = 0.4;
 sonsApp.camera.volume = 0.2;
+sonsApp.sticker.volume = 0.2;
+sonsApp.modal.volume = 0.2;
+sonsApp.tarefaConcluida.volume = 0.3;
+
+let somAtivado = localStorage.getItem('somAtivado') !== 'desativado'; // ligado por padrão
 
 const dispararSom = (tipo) => {
+    if (!somAtivado) return;
     try {
-        // Zera o tempo para permitir toques rápidos em sequência
         sonsApp[tipo].currentTime = 0;
-        // O .catch() evita o erro clássico "DOMException: play() failed" se o navegador bloquear o autoplay antes da interação do usuário
         sonsApp[tipo].play().catch(() => { });
     } catch (e) {
         console.warn("Áudio ignorado:", e);
@@ -227,11 +245,96 @@ toggleEscuro?.addEventListener('change', (e) => {
     else { document.body.classList.remove('dark-mode'); localStorage.setItem('modoEscuro', 'desativado'); }
 });
 
-document.getElementById('btnAbrirConfig')?.addEventListener('click', () => { document.getElementById('modalConfig').classList.remove('escondido'); document.getElementById('msgPerfil').innerText = ''; });
+const toggleSom = document.getElementById('toggleSomAtivado');
+if (toggleSom) toggleSom.checked = somAtivado;
+toggleSom?.addEventListener('change', (e) => {
+    somAtivado = e.target.checked;
+    localStorage.setItem('somAtivado', somAtivado ? 'ativado' : 'desativado');
+});
+
+document.getElementById('btnAbrirConfig')?.addEventListener('click', () => { document.getElementById('modalConfig').classList.remove('escondido'); tornarModalAcessivel('modalConfig'); document.getElementById('msgPerfil').innerText = ''; atualizarStatusBotaoNotificacoes(); });
 
 document.querySelectorAll('.btn-fechar-modal').forEach(btn => {
     btn.addEventListener('click', (e) => { e.target.closest('.modal-overlay').classList.add('escondido'); });
 });
+
+// ==========================================
+// ACESSIBILIDADE DE MODAIS (Esc, focus trap, devolução de foco)
+// ==========================================
+function tornarModalAcessivel(idDoModal, opcoes = {}) {
+    const permitirEsc = opcoes.permitirEsc !== false;
+    const modal = document.getElementById(idDoModal);
+    if (!modal) return;
+
+    dispararSom('modal');
+
+    const seletorFocaveis = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const elementoComFocoAntes = document.activeElement;
+
+    const pegarFocaveis = () => Array.from(modal.querySelectorAll(seletorFocaveis))
+        .filter(el => el.offsetParent !== null);
+
+    // Ao abrir: manda o foco pro primeiro campo/botão focável do modal
+    const focaveis = pegarFocaveis();
+    if (focaveis.length > 0) {
+        focaveis[0].focus();
+    } else {
+        modal.setAttribute('tabindex', '-1');
+        modal.focus();
+    }
+
+    function fecharComEsc() {
+        // Reaproveita o botão de fechar/cancelar que o modal já tem, pra não pular
+        // nenhuma limpeza própria dele (resolver Promise, resetar animação, etc.)
+        const btnFechar = modal.querySelector('.btn-fechar-modal');
+        if (btnFechar) { btnFechar.click(); return; }
+
+        const botoes = Array.from(modal.querySelectorAll('button')).filter(el => el.offsetParent !== null);
+        if (botoes.length === 1) { botoes[0].click(); return; }
+
+        modal.classList.add('escondido');
+    }
+
+    function aoTeclar(e) {
+        if (permitirEsc && e.key === 'Escape') {
+            e.preventDefault();
+            fecharComEsc();
+            return;
+        }
+
+        if (e.key === 'Tab') {
+            const itensFocaveis = pegarFocaveis();
+            if (itensFocaveis.length === 0) return;
+
+            const primeiro = itensFocaveis[0];
+            const ultimo = itensFocaveis[itensFocaveis.length - 1];
+
+            if (e.shiftKey && document.activeElement === primeiro) {
+                e.preventDefault();
+                ultimo.focus();
+            } else if (!e.shiftKey && document.activeElement === ultimo) {
+                e.preventDefault();
+                primeiro.focus();
+            }
+        }
+    }
+
+    document.addEventListener('keydown', aoTeclar);
+
+    // Assim que o modal for fechado — por Esc, Cancelar, Salvar, clique fora, etc. —
+    // destrava o Tab e devolve o foco pra quem estava focado antes de abrir.
+    const observer = new MutationObserver(() => {
+        if (modal.classList.contains('escondido')) {
+            document.removeEventListener('keydown', aoTeclar);
+            observer.disconnect();
+            if (elementoComFocoAntes && typeof elementoComFocoAntes.focus === 'function') {
+                elementoComFocoAntes.focus();
+            }
+        }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+}
+
 // ==========================================
 // HAMBURGER MENU
 // ==========================================
@@ -505,6 +608,97 @@ function vigiarConvites() {
 }
 
 // ==========================================
+// NOTIFICAÇÕES PUSH (Firebase Cloud Messaging) — só configuração client-side
+// ==========================================
+let messagingInstance = null;
+
+async function configurarNotificacoesPush() {
+    if (!usuarioAtual) return;
+
+    // Nem todo navegador suporta Web Push (Safari mais antigo, contextos sem Service Worker, etc.)
+    const suportado = await isSupported().catch(() => false);
+    if (!suportado || !('serviceWorker' in navigator)) {
+        console.warn('Notificações push não são suportadas neste navegador.');
+        return;
+    }
+
+    // Já negou antes? Não insiste de novo — só volta a perguntar se o usuário
+    // mudar isso manualmente nas configurações do navegador
+    if (Notification.permission === 'denied') return;
+
+    try {
+        const permissao = await Notification.requestPermission();
+        if (permissao !== 'granted') return; // Negou ou fechou o prompt — não trava nada, só não salva token
+
+        const registro = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+        if (!messagingInstance) messagingInstance = getMessaging(app);
+
+        const token = await getToken(messagingInstance, {
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: registro
+        });
+
+        if (token) await salvarTokenFCM(token);
+    } catch (erro) {
+        console.error('Erro ao configurar notificações push:', erro);
+    }
+}
+
+document.getElementById('btnAtivarNotificacoes')?.addEventListener('click', async () => {
+    const status = document.getElementById('statusNotificacoesPush');
+    if (status) status.textContent = 'Pedindo permissão...';
+    await configurarNotificacoesPush();
+    atualizarStatusBotaoNotificacoes();
+});
+
+function atualizarStatusBotaoNotificacoes() {
+    const btn = document.getElementById('btnAtivarNotificacoes');
+    const status = document.getElementById('statusNotificacoesPush');
+    if (!btn || !status) return;
+
+    if (!('Notification' in window)) {
+        btn.disabled = true;
+        status.textContent = 'Seu navegador não suporta notificações.';
+        return;
+    }
+
+    if (Notification.permission === 'granted') {
+        btn.textContent = '🔔 Notificações ativadas';
+        btn.disabled = true;
+        status.textContent = '';
+    } else if (Notification.permission === 'denied') {
+        btn.disabled = true;
+        status.textContent = 'Bloqueadas nas configurações do navegador — pra reativar, mude a permissão do site lá e recarregue.';
+    } else {
+        btn.textContent = '🔔 Ativar notificações';
+        btn.disabled = false;
+        status.textContent = '';
+    }
+}
+
+async function salvarTokenFCM(tokenNovo) {
+    if (!usuarioAtual || !tokenNovo) return;
+
+    // O SDK modular (v9+) não tem mais o antigo evento "onTokenRefresh" — o jeito
+    // recomendado hoje é pedir o token de novo a cada sessão (getToken já devolve
+    // o token atual, rotacionado ou não) e comparar com o último salvo neste navegador
+    const tokenAntigo = localStorage.getItem('fcmTokenAtual');
+
+    if (tokenAntigo && tokenAntigo !== tokenNovo) {
+        // Token rotacionou: remove a entrada velha pra não acumular lixo em fcmTokens
+        remove(ref(database, `usuarios/${usuarioAtual.uid}/fcmTokens/${tokenAntigo}`)).catch(() => { });
+    }
+
+    await set(ref(database, `usuarios/${usuarioAtual.uid}/fcmTokens/${tokenNovo}`), {
+        atualizadoEm: Date.now(),
+        userAgent: navigator.userAgent
+    });
+
+    localStorage.setItem('fcmTokenAtual', tokenNovo);
+}
+
+// ==========================================
 // 4. DASHBOARD E CADERNOS
 // ==========================================
 let corSelecionadaParaNovoCaderno = "#2196F3";
@@ -582,6 +776,7 @@ async function abrirCaderno(id, titulo, permissao) {
                 const btnCancel = document.getElementById('btnCancelarAcesso');
 
                 modal.classList.remove('escondido');
+                tornarModalAcessivel('modalAcessoCaderno');
                 input.value = '';
                 input.focus();
 
@@ -613,6 +808,7 @@ async function abrirCaderno(id, titulo, permissao) {
                     const modalErro = document.getElementById('modalAcessoNegado');
                     const btnTentar = document.getElementById('btnTentarSenhaNovamente');
                     modalErro.classList.remove('escondido');
+                    tornarModalAcessivel('modalAcessoNegado');
                     const msgErro = document.getElementById('msgAcessoNegado');
                     if (msgErro) {
                         msgErro.innerText = resultado.bloqueado
@@ -667,7 +863,7 @@ async function abrirCaderno(id, titulo, permissao) {
 // ==========================================
 // 5. GESTÃO AVANÇADA DE PERMISSÕES E CONVITES
 // ==========================================
-document.getElementById('btnAbrirModalConvidar')?.addEventListener('click', () => { document.getElementById('modalConvidar').classList.remove('escondido'); document.getElementById('inputEmailConvite').value = ''; });
+document.getElementById('btnAbrirModalConvidar')?.addEventListener('click', () => { document.getElementById('modalConvidar').classList.remove('escondido'); tornarModalAcessivel('modalConvidar'); document.getElementById('inputEmailConvite').value = ''; });
 
 document.getElementById('btnEnviarConvite')?.addEventListener('click', async () => {
     if (!souAdminOuDono) return;
@@ -704,6 +900,7 @@ document.getElementById('btnEnviarConvite')?.addEventListener('click', async () 
 
 document.getElementById('btnVerParticipantes')?.addEventListener('click', async () => {
     document.getElementById('modalParticipantes').classList.remove('escondido');
+    tornarModalAcessivel('modalParticipantes');
     const listaUI = document.getElementById('listaDeParticipantesModal'); listaUI.innerHTML = "<li>Carregando...</li>";
     const cadernoSnap = await get(ref(database, `cadernos/${cadernoAtualId}/usuarios_permitidos`)); const usuariosPermitidos = cadernoSnap.val(); listaUI.innerHTML = "";
 
@@ -727,11 +924,12 @@ document.getElementById('btnVerParticipantes')?.addEventListener('click', async 
         }
 
         const divInfo = document.createElement('div'); divInfo.className = "avatar-container"; divInfo.style.flex = "1";
-        divInfo.innerHTML = `<img src="${escapeHTML(fotoP)}" class="avatar-pequeno"><span>${escapeHTML(nomeP)} ${controlePermissao}</span>`;
+        divInfo.innerHTML = `<img src="${escapeHTML(fotoP)}" class="avatar-pequeno" alt="${escapeHTML(nomeP)}" loading="lazy"><span>${escapeHTML(nomeP)} ${controlePermissao}</span>`;
+        li.appendChild(divInfo);
         li.appendChild(divInfo);
 
         if (souAdminOuDono && permissao !== 'dono' && uid !== usuarioAtual.uid) {
-            const btnRemover = document.createElement('button'); btnRemover.innerText = '🗑️'; btnRemover.className = 'btn-pequeno btn-sair';
+            const btnRemover = document.createElement('button'); btnRemover.innerText = '🗑️'; btnRemover.className = 'btn-pequeno btn-sair'; btnRemover.setAttribute('aria-label', `Remover ${nomeP} do caderno`);
             let clicouUmaVez = false;
             btnRemover.onclick = async () => {
                 if (!clicouUmaVez) { btnRemover.innerText = 'Certeza?'; btnRemover.classList.add('btn-confirmar-exclusao'); clicouUmaVez = true; setTimeout(() => { btnRemover.innerText = '🗑️'; btnRemover.classList.remove('btn-confirmar-exclusao'); clicouUmaVez = false; }, 3000); }
@@ -760,6 +958,7 @@ document.getElementById('btnSairDoCaderno')?.addEventListener('click', async () 
     if (minhaPermissaoAtual !== 'dono') {
         // NOVO: Em vez do alert feio, abrimos o Modal Personalizado!
         document.getElementById('modalConfirmarSaida').classList.remove('escondido');
+        tornarModalAcessivel('modalConfirmarSaida');
     } else {
         if (qtdParticipantes === 1) {
             document.getElementById('modalParticipantes').classList.add('escondido');
@@ -776,6 +975,7 @@ document.getElementById('btnSairDoCaderno')?.addEventListener('click', async () 
             }
             document.getElementById('modalParticipantes').classList.add('escondido');
             document.getElementById('modalTransferirDono').classList.remove('escondido');
+            tornarModalAcessivel('modalTransferirDono');
         }
     }
 });
@@ -866,6 +1066,7 @@ document.getElementById('btnSalvarConfigCaderno')?.addEventListener('click', asy
 // Aproveite e atualize a função que ABRE o modal de config para carregar o PIN corretamente:
 document.getElementById('btnConfigCaderno')?.addEventListener('click', async () => {
     document.getElementById('modalConfigCaderno').classList.remove('escondido');
+    tornarModalAcessivel('modalConfigCaderno');
     document.getElementById('inputEditNomeCaderno').value = document.getElementById('tituloCadernoAtual').innerText;
 
     if (souDonoDoCadernoAtual) { document.getElementById('btnAbrirModalExcluirCaderno').classList.remove('escondido'); }
@@ -902,6 +1103,7 @@ document.getElementById('btnConfigCaderno')?.addEventListener('click', async () 
 
 document.getElementById('btnAbrirModalExcluirCaderno')?.addEventListener('click', () => {
     document.getElementById('modalExcluirCaderno').classList.remove('escondido');
+    tornarModalAcessivel('modalExcluirCaderno');
     document.getElementById('inputConfirmarNomeCaderno').value = '';
     document.getElementById('btnConfirmarExcluirCaderno').disabled = true;
 });
@@ -1007,11 +1209,13 @@ addEventoOcultarTeclado('btnObjEditar', () => {
         const papel = imagemSelecionada.querySelector('.carta-papel');
         document.getElementById('inputTextoCarta').value = papel.innerText || '';
         document.getElementById('modalEditarCarta').classList.remove('escondido');
+        +       tornarModalAcessivel('modalEditarCarta');
     }
     else if (imagemSelecionada.classList.contains('raspadinha-objeto') || imagemSelecionada.querySelector('.raspadinha-canvas')) {
         const textoDiv = imagemSelecionada.querySelector('.raspadinha-texto');
         document.getElementById('inputTextoRaspadinha').value = textoDiv.innerText || '';
         document.getElementById('modalEditarRaspadinha').classList.remove('escondido');
+        +       tornarModalAcessivel('modalEditarRaspadinha');
     }
     else if (imagemSelecionada.classList.contains('postit-objeto')) {
         const textoDiv = imagemSelecionada.querySelector('.postit-texto');
@@ -1019,6 +1223,7 @@ addEventoOcultarTeclado('btnObjEditar', () => {
         const tempDiv = document.createElement("div"); tempDiv.innerHTML = txt;
         document.getElementById('inputTextoPostit').value = tempDiv.innerText || '';
         document.getElementById('modalEditarPostit').classList.remove('escondido');
+        +       tornarModalAcessivel('modalEditarPostit');
     }
     //  Destranca os textos pra você editar direto na folha
     else if (imagemSelecionada.querySelector('.ingresso-texto')) {
@@ -1065,6 +1270,7 @@ window.animarElerCarta = (idContainer) => {
         const textoDoPapel = container.querySelector('.carta-papel').innerHTML;
         document.getElementById('conteudoLeituraCarta').innerHTML = textoDoPapel;
         document.getElementById('modalLerCarta').classList.remove('escondido');
+        tornarModalAcessivel('modalLerCarta');
         idCartaLendoAtual = idContainer;
     }, 600);
 };
@@ -1237,12 +1443,13 @@ document.getElementById('inputFoto')?.addEventListener('change', async (e) => {
         // Gera a Polaroid com a imagem levinha
         const polaroidHTML = `
             <div class="polaroid" contenteditable="false" draggable="true" style="float: left; margin: 10px 15px 10px 0;">
-                <img src="${base64Comprimido}" class="polaroid-img" contenteditable="false" draggable="true">
+                <img src="${base64Comprimido}" class="polaroid-img" contenteditable="false" draggable="true" alt="Foto colada no caderno" loading="lazy">
                 <div class="polaroid-legenda" contenteditable="true" spellcheck="false" title="Clique para escrever...">Escreva uma legenda...</div>
             </div>&nbsp;
         `;
         caixaDeTexto.insertAdjacentHTML('beforeend', polaroidHTML);
         salvarTextoFirebase();
+        dispararSom('camera');
 
         if (window.mostrarToast) window.mostrarToast("Foto colada com sucesso!", "📸");
     } catch (erro) {
@@ -1261,6 +1468,7 @@ document.getElementById('btnInserirPostit')?.addEventListener('click', () => {
         </div>
     `;
     caixaDeTexto.insertAdjacentHTML('beforeend', postitHTML);
+    dispararSom('sticker');
     salvarTextoFirebase(); document.getElementById('menuStickers').classList.add('escondido');
 });
 
@@ -1518,6 +1726,7 @@ document.querySelectorAll('.btn-ferramenta').forEach(btn => {
 document.getElementById('btnNovaLousa')?.addEventListener('click', () => {
     if (minhaPermissaoAtual === 'leitor') return;
     document.getElementById('modalLimparLousa')?.classList.remove('escondido');
+    tornarModalAcessivel('modalLimparLousa');
 });
 
 document.getElementById('btnConfirmarLimparLousa')?.addEventListener('click', async () => {
@@ -1663,7 +1872,7 @@ const sincronizarToolbarArrasto = (elemento, toolbarId) => {
 // ==========================================
 // 9. CÁPSULA DO TEMPO E STICKERS
 // ==========================================
-document.getElementById('btnTrancarPagina')?.addEventListener('click', () => { document.getElementById('modalCapsula').classList.remove('escondido'); });
+document.getElementById('btnTrancarPagina')?.addEventListener('click', () => { document.getElementById('modalCapsula').classList.remove('escondido'); }); tornarModalAcessivel('modalCapsula');
 
 document.getElementById('btnSalvarCapsula')?.addEventListener('click', async () => {
     const dataInput = document.getElementById('inputDataCapsula').value;
@@ -1681,6 +1890,7 @@ document.querySelectorAll('.btn-sticker').forEach(btn => {
     btn.addEventListener('click', (e) => {
         if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return;
         push(ref(database, `stickers/${cadernoAtualId}/pagina_${paginaAtual}`), { emoji: e.target.innerText, x: 50, y: 50, rot: 0 });
+        dispararSom('sticker');
         menuStickers.classList.add('escondido');
     });
 });
@@ -1953,7 +2163,7 @@ document.getElementById('btnInserirRaspadinha')?.addEventListener('click', () =>
         <div class="obj-flutuante raspadinha-container" data-dono="${usuarioAtual.uid}" contenteditable="false" draggable="false" style="top: 200px; left: 100px; width: 250px; --rot: ${rotacaoSorteada}deg;">
             <div class="raspadinha-texto">Surpresa Oculta!</div>
             <canvas class="raspadinha-canvas"></canvas>
-            <img class="raspadinha-estado escondido" src=""> 
+            <img class="raspadinha-estado escondido" src="" alt="">
         </div>
     `;
 
@@ -2061,6 +2271,53 @@ function atualizarBotoesPaginacao() {
     }
 }
 
+// ==========================================
+// ANIMAÇÃO DE VIRAR PÁGINA
+// ==========================================
+const DURACAO_FLIP_MS = 220; // precisa bater com a duração das keyframes no CSS
+
+function prefereMovimentoReduzido() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function esperarFimDaAnimacao(elemento, duracaoFallback) {
+    return new Promise((resolve) => {
+        let resolvido = false;
+        const finalizar = () => {
+            if (resolvido) return;
+            resolvido = true;
+            elemento.removeEventListener('animationend', finalizar);
+            resolve();
+        };
+        elemento.addEventListener('animationend', finalizar, { once: true });
+        setTimeout(finalizar, duracaoFallback + 80); // rede de segurança, caso animationend não dispare
+    });
+}
+
+async function virarPagina(direcao, aplicarNovaPagina) {
+    dispararSom('pagina'); // Toca o som de virar a página
+
+    if (!folhaA4Wrapper || prefereMovimentoReduzido()) {
+        aplicarNovaPagina();
+        carregarPaginaAtual();
+        return;
+    }
+
+    folhaA4Wrapper.style.setProperty('--rot-saida', direcao === 'anterior' ? '-90deg' : '90deg');
+    folhaA4Wrapper.style.setProperty('--rot-entrada', direcao === 'anterior' ? '90deg' : '-90deg');
+
+    folhaA4Wrapper.classList.add('virando-saida');
+    await esperarFimDaAnimacao(folhaA4Wrapper, DURACAO_FLIP_MS);
+    folhaA4Wrapper.classList.remove('virando-saida');
+
+    aplicarNovaPagina();      // troca o estado (paginaAtual) no meio do movimento
+    carregarPaginaAtual();    // sua lógica original, intocada
+
+    folhaA4Wrapper.classList.add('virando-entrada');
+    await esperarFimDaAnimacao(folhaA4Wrapper, DURACAO_FLIP_MS);
+    folhaA4Wrapper.classList.remove('virando-entrada');
+}
+
 document.getElementById('btnNovaPagina')?.addEventListener('click', () => {
     if (!cadernoAtualId || minhaPermissaoAtual === 'leitor') return;
     totalPaginas++; update(ref(database, `cadernos/${cadernoAtualId}`), { totalPaginas: totalPaginas });
@@ -2069,35 +2326,28 @@ document.getElementById('btnNovaPagina')?.addEventListener('click', () => {
 
 document.getElementById('btnPaginaProxima')?.addEventListener('click', () => {
     if (paginaAtual < totalPaginas) {
-        dispararSom('pagina'); // Toca o som
-        paginaAtual++;
-        carregarPaginaAtual();
+        virarPagina('proxima', () => { paginaAtual++; });
     }
 });
 
 document.getElementById('btnPaginaAnterior')?.addEventListener('click', () => {
     if (paginaAtual > 1) {
-        dispararSom('pagina'); // Toca o som
-        paginaAtual--;
-        carregarPaginaAtual();
+        virarPagina('anterior', () => { paginaAtual--; });
     }
 });
 
 document.getElementById('inputIrParaPagina')?.addEventListener('change', (e) => {
     let novaPag = parseInt(e.target.value);
 
-    // Verifica se o número é válido (não é letra, não é menor que 1 e não é maior que o total)
     if (!isNaN(novaPag) && novaPag >= 1 && novaPag <= totalPaginas) {
-        dispararSom('pagina'); // Toca o som de virar a página
-        paginaAtual = novaPag;
-        carregarPaginaAtual();
+        const direcao = novaPag >= paginaAtual ? 'proxima' : 'anterior';
+        virarPagina(direcao, () => { paginaAtual = novaPag; });
     } else {
-        // Se digitar loucura (ex: pág 90 num caderno de 10), reseta pro número atual
         e.target.value = paginaAtual;
     }
 });
 
-document.getElementById('btnAbrirModalExcluirPag')?.addEventListener('click', () => { document.getElementById('modalExcluirPagina').classList.remove('escondido'); });
+document.getElementById('btnAbrirModalExcluirPag')?.addEventListener('click', () => { document.getElementById('modalExcluirPagina').classList.remove('escondido'); }); tornarModalAcessivel('modalExcluirPagina');
 
 document.getElementById('btnConfirmarExcluirPagina')?.addEventListener('click', async () => {
     if (!souAdminOuDono || totalPaginas <= 1) return;
@@ -2174,7 +2424,7 @@ function carregarPaginaAtual() {
         });
     }
     if (refMinhaPresenca) {
-        update(refMinhaPresenca, { paginaLendo: paginaAtual });
+        update(refMinhaPresenca, { paginaLendo: paginaAtual, paginaAtual: paginaAtual });
     }
 
     // LIMPEZA DE LISTENERS ANTIGOS (Evita Flicker e Race Conditions)
@@ -2309,6 +2559,27 @@ function embedMusica(link) {
     }
 }
 
+// Guarda os elementos DOM dos cursores alheios por uid, pra reaproveitar o
+// mesmo nó entre atualizações (senão a transição CSS não tem efeito).
+let cursoresAlheios = {};
+let ultimoMovimentoCursor = {}; // uid -> timestamp do último cursorX/cursorY recebido
+let intervaloFadeCursor = null;
+
+// Cor estável por uid: hash simples da string -> índice numa paleta fixa
+// com boas distâncias de matiz entre si. Mesma pessoa = mesma cor sempre,
+// sem precisar guardar nada extra no Firebase.
+const PALETA_CURSORES = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#f44336', '#8bc34a'];
+function corDoCursorPorUid(uid) {
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+        hash = (hash * 31 + uid.charCodeAt(i)) | 0;
+    }
+    return PALETA_CURSORES[Math.abs(hash) % PALETA_CURSORES.length];
+}
+
+const EH_DISPOSITIVO_TOUCH = ('ontouchstart' in window) ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
 function iniciarRotinasDoCaderno() {
     if (!cadernoAtualId) return;
 
@@ -2323,12 +2594,14 @@ function iniciarRotinasDoCaderno() {
     escutaPresenca = onValue(ref(database, `presenca/${cadernoAtualId}`), (snap) => {
         const areaOnline = document.getElementById('areaUsuariosOnline');
         areaOnline.innerHTML = '';
-        document.querySelectorAll('.cursor-alheio').forEach(c => c.remove());
+
+        const uidsOnline = new Set();
 
         if (snap.exists()) {
             snap.forEach(filho => {
                 const uid = filho.key;
                 const dados = filho.val();
+                uidsOnline.add(uid);
 
                 let humorBadge = dados.humor ? `<div class="humor-badge">${escapeHTML(dados.humor)}</div>` : '';
 
@@ -2339,25 +2612,59 @@ function iniciarRotinasDoCaderno() {
 
                 areaOnline.innerHTML += `
                     <div class="avatar-presenca" title="${escapeHTML(dados.nome)}">
-                        <img src="${escapeHTML(dados.foto)}">
+                        <img src="${escapeHTML(dados.foto)}" alt="${escapeHTML(dados.nome)}" loading="lazy">
                         <div class="dot-verde"></div>
                         ${humorBadge}
                         ${digitandoIndicador}
                     </div>`;
 
                 if (uid !== usuarioAtual?.uid) {
-                    // Renderiza o Cursor Flutuante
-                    if (dados.cursorX != null && dados.cursorY != null) {
-                        const cursorDiv = document.createElement('div');
-                        cursorDiv.className = 'cursor-alheio';
+                    const estaNaMinhaPagina = dados.paginaAtual === paginaAtual;
+
+                    if (estaNaMinhaPagina && dados.cursorX != null && dados.cursorY != null) {
+                        let cursorDiv = cursoresAlheios[uid];
+                        if (!cursorDiv) {
+                            cursorDiv = document.createElement('div');
+                            cursorDiv.className = 'cursor-alheio';
+                            if (prefereMovimentoReduzido()) {
+                                // Desliga só a transição de POSIÇÃO; o fade de opacidade continua suave
+                                cursorDiv.style.transitionProperty = 'opacity';
+                            }
+                            const cor = corDoCursorPorUid(uid);
+                            cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: ${cor};"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${escapeHTML(dados.nome.split(' ')[0])}</div>`;
+                            folhaA4Wrapper.appendChild(cursorDiv);
+                            cursoresAlheios[uid] = cursorDiv;
+                        }
                         cursorDiv.style.transform = `translate(${dados.cursorX}px, ${dados.cursorY}px)`;
-                        cursorDiv.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="color: #e91e63;"><path d="M0 0l16 6-6 1.5L8.5 16 0 0z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg><div class="cursor-nome">${escapeHTML(dados.nome.split(' ')[0])}</div>`;
-                        folhaA4Wrapper.appendChild(cursorDiv);
+                        cursorDiv.style.opacity = '1';
+                        ultimoMovimentoCursor[uid] = Date.now();
+                    } else if (cursoresAlheios[uid]) {
+                        cursoresAlheios[uid].remove();
+                        delete cursoresAlheios[uid];
+                        delete ultimoMovimentoCursor[uid];
                     }
+                }
+            });
+            Object.keys(cursoresAlheios).forEach(uid => {
+                if (!uidsOnline.has(uid)) {
+                    cursoresAlheios[uid].remove();
+                    delete cursoresAlheios[uid];
+                    delete ultimoMovimentoCursor[uid];
                 }
             });
         }
     });
+
+    // Some com o cursor de quem ficou 8s+ sem mover o mouse — só no client, sem Firebase
+    if (intervaloFadeCursor) clearInterval(intervaloFadeCursor);
+    intervaloFadeCursor = setInterval(() => {
+        const agora = Date.now();
+        Object.keys(cursoresAlheios).forEach(uid => {
+            if (agora - (ultimoMovimentoCursor[uid] || 0) > 8000) {
+                cursoresAlheios[uid].style.opacity = '0';
+            }
+        });
+    }, 2000);
 
     // --- NOVO: RECEBEDOR DO VISTO POR ÚLTIMO (Memória Permanente) ---
     onValue(ref(database, `leituras/${cadernoAtualId}`), (snap) => {
@@ -2446,16 +2753,29 @@ function iniciarRotinasDoCaderno() {
 
             const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = d.concluida; chk.style.width = "auto";
             if (minhaPermissaoAtual === 'leitor') chk.disabled = true;
-            else chk.addEventListener('change', () => { update(ref(database, `tarefas/${cadernoAtualId}/${id}`), { concluida: chk.checked }); });
+            else chk.addEventListener('change', () => {
+                update(ref(database, `tarefas/${cadernoAtualId}/${id}`), { concluida: chk.checked });
+                if (chk.checked) dispararSom('tarefaConcluida'); // só toca ao marcar, não ao desmarcar
+            });
 
             const span = document.createElement('span'); span.className = 'texto-tarefa'; span.innerText = d.texto; if (d.concluida) span.classList.add('tarefa-concluida');
             li.appendChild(chk); li.appendChild(span);
 
             if (minhaPermissaoAtual !== 'leitor') {
-                const btnE = document.createElement('button'); btnE.innerText = '✏️'; btnE.className = 'btn-pequeno';
-                btnE.addEventListener('click', () => { tarefaSendoEditadaId = id; document.getElementById('inputEdicaoTarefa').value = d.texto; document.getElementById('modalEditarTarefa').classList.remove('escondido'); });
-                const btnX = document.createElement('button'); btnX.innerText = '🗑️'; btnX.className = 'btn-pequeno';
-                btnX.addEventListener('click', () => { tarefaSendoApagadaId = id; document.getElementById('textoTarefaApagar').innerText = `"${d.texto}"`; document.getElementById('modalApagarTarefa').classList.remove('escondido'); });
+                const btnE = document.createElement('button'); btnE.innerText = '✏️'; btnE.className = 'btn-pequeno'; btnE.setAttribute('aria-label', 'Editar tarefa');
+                btnE.addEventListener('click', () => {
+                    tarefaSendoEditadaId = id;
+                    document.getElementById('inputEdicaoTarefa').value = d.texto;
+                    document.getElementById('modalEditarTarefa').classList.remove('escondido');
+                    tornarModalAcessivel('modalEditarTarefa');
+                });
+                const btnX = document.createElement('button'); btnX.innerText = '🗑️'; btnX.className = 'btn-pequeno'; btnX.setAttribute('aria-label', 'Excluir tarefa');
+                btnX.addEventListener('click', () => {
+                    tarefaSendoApagadaId = id;
+                    document.getElementById('textoTarefaApagar').innerText = `"${d.texto}"`;
+                    document.getElementById('modalApagarTarefa').classList.remove('escondido');
+                    tornarModalAcessivel('modalApagarTarefa');
+                });
                 li.appendChild(btnE); li.appendChild(btnX);
             }
             listaTarefasUi.appendChild(li);
@@ -2479,20 +2799,26 @@ function iniciarRotinasDoCaderno() {
     escutarContagens();
 
     // --- TRANSMISSOR DE CURSOR (Figma Effect) ---
-    let ultimoEnvioMouse = 0;
-    folhaA4Wrapper?.addEventListener('mousemove', (e) => {
-        if (!cadernoAtualId || !refMinhaPresenca) return;
+    if (!EH_DISPOSITIVO_TOUCH) {
+        let ultimoEnvioMouse = 0;
+        folhaA4Wrapper?.addEventListener('mousemove', (e) => {
+            if (!cadernoAtualId || !refMinhaPresenca) return;
 
-        const agora = Date.now();
-        if (agora - ultimoEnvioMouse > 100) {
-            const rect = folhaA4Wrapper.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const agora = Date.now();
+            if (agora - ultimoEnvioMouse > 100) {
+                const rect = folhaA4Wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
 
-            update(refMinhaPresenca, { cursorX: x, cursorY: y });
-            ultimoEnvioMouse = agora;
-        }
-    });
+                update(refMinhaPresenca, { cursorX: x, cursorY: y, paginaAtual: paginaAtual });
+                ultimoEnvioMouse = agora;
+            }
+        });
+
+        folhaA4Wrapper?.addEventListener('mouseleave', () => {
+            if (refMinhaPresenca) update(refMinhaPresenca, { cursorX: null, cursorY: null });
+        });
+    }
 
     folhaA4Wrapper?.addEventListener('mouseleave', () => {
         if (refMinhaPresenca) update(refMinhaPresenca, { cursorX: null, cursorY: null });
@@ -2678,7 +3004,19 @@ function renderizarPreviewWatchlist(dados) {
         return Object.values(s).some(v => v === 'assistindo');
     }).length;
     const total = itens.length;
-    preview.innerHTML = `<strong>${total}</strong> títulos adicionados${assistindo > 0 ? ` · <strong>${assistindo}</strong> assistindo agora` : ''}`;
+
+    const resumo = `<div><strong>${total}</strong> títulos adicionados${assistindo > 0 ? ` · <strong>${assistindo}</strong> assistindo agora` : ''}</div>`;
+
+    const recentes = [...itens].sort((a, b) => (b[1].criadoEm || 0) - (a[1].criadoEm || 0)).slice(0, 3);
+    const listaHTML = recentes.map(([, item]) => {
+        const nota = typeof item.notaTMDB === 'number' ? ` <span class="watchlist-preview-nota">⭐ ${item.notaTMDB.toFixed(1)}</span>` : '';
+        const sinopseCurta = item.sinopse
+            ? `<div class="watchlist-preview-sinopse">${escapeHTML(item.sinopse.slice(0, 70))}${item.sinopse.length > 70 ? '…' : ''}</div>`
+            : '';
+        return `<div class="watchlist-preview-item"><span>${item.tipo === 'serie' ? '📺' : '🎬'} ${escapeHTML(item.titulo)}</span>${nota}${sinopseCurta}</div>`;
+    }).join('');
+
+    preview.innerHTML = resumo + listaHTML;
 }
 
 // Grid fullscreen
@@ -2731,6 +3069,7 @@ function renderizarGridWatchlist(dados) {
             img.className = 'watchlist-card-foto';
             img.src = item.foto;
             img.alt = item.titulo;
+            img.loading = 'lazy';
             card.appendChild(img);
         } else {
             const ph = document.createElement('div');
@@ -2746,6 +3085,7 @@ function renderizarGridWatchlist(dados) {
             const menuBtn = document.createElement('button');
             menuBtn.className = 'watchlist-menu-btn';
             menuBtn.innerHTML = '⋮';
+            menuBtn.setAttribute('aria-label', 'Menu de opções');
             menuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 // Fecha outros menus abertos
@@ -2767,6 +3107,7 @@ function renderizarGridWatchlist(dados) {
                     document.getElementById('nomeFilmeExcluir').textContent = item.titulo;
                     document.getElementById('idFilmeExcluir').value = id;
                     document.getElementById('modalExcluirWatchlist').classList.remove('escondido');
+                    tornarModalAcessivel('modalExcluirWatchlist');
                 });
                 menuWrapper.appendChild(dropdown);
                 // Fecha ao clicar fora
@@ -2790,6 +3131,17 @@ function renderizarGridWatchlist(dados) {
         header.className = 'watchlist-card-header';
         header.innerHTML = `<h4>${escapeHTML(item.titulo)}</h4><span class="watchlist-tipo-badge ${tipoBadge}">${tipoTexto}</span>`;
         body.appendChild(header);
+
+        // TMDB: nota + sinopse — condicional, então itens antigos sem esses campos não quebram
+        if (typeof item.notaTMDB === 'number' || item.sinopse) {
+            const tmdbDiv = document.createElement('div');
+            tmdbDiv.className = 'watchlist-card-tmdb';
+            tmdbDiv.innerHTML = `
+        ${typeof item.notaTMDB === 'number' ? `<span class="watchlist-nota-tmdb">⭐ ${item.notaTMDB.toFixed(1)}</span>` : ''}
+        ${item.sinopse ? `<p class="watchlist-sinopse">${escapeHTML(item.sinopse)}</p>` : ''}
+    `;
+            body.appendChild(tmdbDiv);
+        }
 
         // Participantes: status + nota de cada um
         const participantesDiv = document.createElement('div');
@@ -2857,7 +3209,7 @@ function renderizarGridWatchlist(dados) {
         const meuNome = meuDado.nome || 'Eu';
         const minhaFoto = meuDado.fotoPerfil || AVATAR_PADRAO;
 
-        minhaRow.innerHTML = `<img src="${escapeHTML(minhaFoto)}" alt="${escapeHTML(meuNome)}"><span class="nome-part">${escapeHTML(meuNome.split(' ')[0])}</span>`;
+        minhaRow.innerHTML = `<img src="${escapeHTML(minhaFoto)}" alt="${escapeHTML(meuNome)}" loading="lazy"><span class="nome-part">${escapeHTML(meuNome.split(' ')[0])}</span>`;
 
         // Meu status (select)
         if (minhaPermissaoAtual !== 'leitor') {
@@ -2890,6 +3242,7 @@ function renderizarGridWatchlist(dados) {
             btnNote.className = 'btn-pequeno';
             btnNote.style.cssText = 'font-size: 12px; padding: 2px 4px; background: none; border: none; box-shadow: none; cursor: pointer; flex-shrink:0;';
             btnNote.textContent = minhaAnotacao ? '📝' : '➕📝';
+            btnNote.setAttribute('aria-label', 'Adicionar ou editar anotação');
             btnNote.title = 'Adicionar/Editar anotação';
             btnNote.addEventListener('click', () => {
                 document.getElementById('tituloModalAnotacao').textContent = `Sua Anotação sobre: ${item.titulo}`;
@@ -2899,6 +3252,7 @@ function renderizarGridWatchlist(dados) {
                 document.getElementById('anotacaoItemId').value = id;
                 document.getElementById('anotacaoUid').value = meuUid;
                 document.getElementById('modalAnotacaoWatchlist').classList.remove('escondido');
+                tornarModalAcessivel('modalAnotacaoWatchlist');
             });
             minhaRow.appendChild(btnNote);
         }
@@ -2918,7 +3272,7 @@ function renderizarGridWatchlist(dados) {
 
             const row = document.createElement('div');
             row.className = 'watchlist-participante-row';
-            row.innerHTML = `<img src="${escapeHTML(fotoP)}" alt="${escapeHTML(nomeP)}"><span class="nome-part">${escapeHTML(nomeP.split(' ')[0])}</span>`;
+            row.innerHTML = `<img src="${escapeHTML(fotoP)}" alt="${escapeHTML(nomeP)}" loading="lazy"><span class="nome-part">${escapeHTML(nomeP.split(' ')[0])}</span>`;
 
             if (statusP) {
                 const statusEmoji = statusP === 'assistindo' ? '▶️' : statusP === 'quero' ? '📌' : '✅';
@@ -2946,6 +3300,7 @@ function renderizarGridWatchlist(dados) {
                     document.getElementById('inputAnotacaoWatchlist').readOnly = true;
                     document.getElementById('btnSalvarAnotacao').classList.add('escondido');
                     document.getElementById('modalAnotacaoWatchlist').classList.remove('escondido');
+                    tornarModalAcessivel('modalAnotacaoWatchlist');
                 });
                 row.appendChild(btnNote);
             }
@@ -2987,10 +3342,16 @@ function abrirModalEditarWatchlist(id, item) {
     document.getElementById('inputTituloWatchlist').value = item.titulo;
     document.getElementById('selectTipoWatchlist').value = item.tipo || 'filme';
     document.getElementById('watchlistEditandoId').value = id;
-    document.getElementById('previewFotoWatchlist').innerHTML = item.foto ? `<img src="${escapeHTML(item.foto)}" style="max-width:100%;max-height:100px;border-radius:8px;">` : '';
+    document.getElementById('previewFotoWatchlist').innerHTML = item.foto ? `<img src="${escapeHTML(item.foto)}" style="max-width:100%;max-height:100px;border-radius:8px;" alt="Prévia da capa">` : '';
+    document.getElementById('listaResultadosTMDB').classList.add('escondido');
+    document.getElementById('listaResultadosTMDB').innerHTML = '';
+    document.getElementById('statusBuscaTMDB').textContent = '';
     fotoWatchlistBase64 = item.foto || '';
+    sinopseWatchlistAtual = item.sinopse || '';
+    notaTMDBAtual = typeof item.notaTMDB === 'number' ? item.notaTMDB : null;
     document.getElementById('btnSalvarWatchlist').textContent = 'Salvar Alterações';
     document.getElementById('modalWatchlist').classList.remove('escondido');
+    tornarModalAcessivel('modalWatchlist');
 }
 
 // Abrir watchlist fullscreen
@@ -3017,13 +3378,120 @@ document.getElementById('selectOrdemWatchlist')?.addEventListener('change', () =
     renderizarGridWatchlist(dadosWatchlistCache);
 });
 
+// ==========================================
+// BUSCA TMDB (THE MOVIE DATABASE) NA WATCHLIST
+// ==========================================
+let timeoutBuscaTMDB = null;
+let sinopseWatchlistAtual = '';
+let notaTMDBAtual = null;
+
+async function buscarNoTMDB(query) {
+    const statusEl = document.getElementById('statusBuscaTMDB');
+    const listaEl = document.getElementById('listaResultadosTMDB');
+
+    if (!query || query.trim().length < 2) {
+        listaEl.classList.add('escondido');
+        listaEl.innerHTML = '';
+        if (statusEl) statusEl.textContent = '';
+        return;
+    }
+
+    if (statusEl) statusEl.textContent = 'Buscando...';
+
+    try {
+        const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Resposta não-ok do TMDB');
+        const dados = await resp.json();
+
+        // /search/multi também devolve pessoas (media_type "person") — filtramos fora
+        const resultados = (dados.results || [])
+            .filter(r => r.media_type === 'movie' || r.media_type === 'tv')
+            .slice(0, 6);
+
+        if (statusEl) statusEl.textContent = '';
+        renderizarResultadosTMDB(resultados);
+    } catch (err) {
+        console.error('Erro na busca TMDB:', err);
+        if (statusEl) statusEl.textContent = 'Não consegui buscar agora — pode preencher manualmente.';
+        listaEl.classList.add('escondido');
+        listaEl.innerHTML = '';
+    }
+}
+
+function renderizarResultadosTMDB(resultados) {
+    const listaEl = document.getElementById('listaResultadosTMDB');
+    if (!listaEl) return;
+
+    if (resultados.length === 0) {
+        listaEl.classList.add('escondido');
+        listaEl.innerHTML = '';
+        return;
+    }
+
+    listaEl.innerHTML = '';
+    resultados.forEach((r) => {
+        const titulo = r.title || r.name || 'Sem título';
+        const dataLancamento = r.release_date || r.first_air_date || '';
+        const ano = dataLancamento ? dataLancamento.slice(0, 4) : '—';
+        const posterUrl = r.poster_path ? `${TMDB_IMG_BASE}${r.poster_path}` : '';
+
+        const item = document.createElement('div');
+        item.className = 'tmdb-resultado-item';
+        item.innerHTML = `
+            ${posterUrl
+                ? `<img src="${posterUrl}" alt="" class="tmdb-resultado-poster" loading="lazy">`
+                : `<div class="tmdb-resultado-poster tmdb-resultado-poster-vazio">${r.media_type === 'tv' ? '📺' : '🎬'}</div>`}
+            <div class="tmdb-resultado-info">
+                <span class="tmdb-resultado-titulo">${escapeHTML(titulo)}</span>
+                <span class="tmdb-resultado-ano">${ano} · ${r.media_type === 'tv' ? 'Série' : 'Filme'}</span>
+            </div>
+        `;
+        item.addEventListener('click', () => selecionarResultadoTMDB(r));
+        listaEl.appendChild(item);
+    });
+
+    listaEl.classList.remove('escondido');
+}
+
+function selecionarResultadoTMDB(r) {
+    const titulo = r.title || r.name || '';
+    document.getElementById('inputTituloWatchlist').value = titulo;
+    document.getElementById('selectTipoWatchlist').value = r.media_type === 'tv' ? 'serie' : 'filme';
+
+    if (r.poster_path) {
+        // URL direta do TMDB — reaproveita a mesma variável do upload manual, já que
+        // o <img src> aceita tanto uma URL quanto um base64
+        fotoWatchlistBase64 = `${TMDB_IMG_BASE}${r.poster_path}`;
+        document.getElementById('previewFotoWatchlist').innerHTML = `<img src="${fotoWatchlistBase64}" style="max-width:100%;max-height:100px;border-radius:8px;" alt="Pôster escolhido">`;
+    }
+
+    sinopseWatchlistAtual = r.overview || '';
+    notaTMDBAtual = typeof r.vote_average === 'number' ? r.vote_average : null;
+
+    document.getElementById('listaResultadosTMDB').classList.add('escondido');
+    document.getElementById('listaResultadosTMDB').innerHTML = '';
+    document.getElementById('statusBuscaTMDB').textContent = '✓ Preenchido com dados do TMDB. Pode trocar a foto manualmente se quiser.';
+}
+
+document.getElementById('inputTituloWatchlist')?.addEventListener('input', (e) => {
+    clearTimeout(timeoutBuscaTMDB);
+    const valor = e.target.value;
+    timeoutBuscaTMDB = setTimeout(() => buscarNoTMDB(valor), 400);
+});
+
+document.getElementById('inputTituloWatchlist')?.addEventListener('blur', () => {
+    // Delay pra deixar o clique num resultado registrar antes de esconder a lista
+    setTimeout(() => document.getElementById('listaResultadosTMDB')?.classList.add('escondido'), 150);
+});
+
 // Foto da watchlist
 document.getElementById('inputFotoWatchlist')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
         fotoWatchlistBase64 = await comprimirImagemCanvas(file, 400, 0.6);
-        document.getElementById('previewFotoWatchlist').innerHTML = `<img src="${fotoWatchlistBase64}" style="max-width:100%;max-height:100px;border-radius:8px;">`;
+        document.getElementById('previewFotoWatchlist').innerHTML = `<img src="${fotoWatchlistBase64}" style="max-width:100%;max-height:100px;border-radius:8px;" alt="Prévia da capa">`;
     } catch (err) {
         console.error('Erro foto watchlist:', err);
     }
@@ -3038,9 +3506,15 @@ function abrirModalAdicionarWatchlist() {
     document.getElementById('selectTipoWatchlist').value = 'serie';
     document.getElementById('watchlistEditandoId').value = '';
     document.getElementById('previewFotoWatchlist').innerHTML = '';
+    document.getElementById('listaResultadosTMDB').classList.add('escondido');
+    document.getElementById('listaResultadosTMDB').innerHTML = '';
+    document.getElementById('statusBuscaTMDB').textContent = '';
     document.getElementById('btnSalvarWatchlist').textContent = 'Adicionar';
     fotoWatchlistBase64 = '';
+    sinopseWatchlistAtual = '';
+    notaTMDBAtual = null;
     document.getElementById('modalWatchlist').classList.remove('escondido');
+    tornarModalAcessivel('modalWatchlist');
 }
 
 document.getElementById('btnAdicionarWatchlistFull')?.addEventListener('click', abrirModalAdicionarWatchlist);
@@ -3058,6 +3532,8 @@ document.getElementById('btnSalvarWatchlist')?.addEventListener('click', async (
             tipo: document.getElementById('selectTipoWatchlist').value,
         };
         if (fotoWatchlistBase64) updateData.foto = fotoWatchlistBase64;
+        if (sinopseWatchlistAtual) updateData.sinopse = sinopseWatchlistAtual;
+        if (typeof notaTMDBAtual === 'number') updateData.notaTMDB = notaTMDBAtual;
         await update(ref(database, `watchlist/${cadernoAtualId}/${editandoId}`), updateData);
         if (window.mostrarToast) window.mostrarToast(`"${titulo}" atualizado!`, '✏️');
     } else {
@@ -3070,6 +3546,8 @@ document.getElementById('btnSalvarWatchlist')?.addEventListener('click', async (
             statusParticipantes: {},
         };
         if (fotoWatchlistBase64) novoItem.foto = fotoWatchlistBase64;
+        if (sinopseWatchlistAtual) novoItem.sinopse = sinopseWatchlistAtual;
+        if (typeof notaTMDBAtual === 'number') novoItem.notaTMDB = notaTMDBAtual;
         await push(ref(database, `watchlist/${cadernoAtualId}`), novoItem);
         if (window.mostrarToast) window.mostrarToast(`"${titulo}" adicionado!`, '🎬');
     }
@@ -3209,6 +3687,7 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             if (desenhoDaPagina && desenhoDaPagina.img) {
                 const imgDesenho = document.createElement('img');
                 imgDesenho.src = desenhoDaPagina.img;
+                imgDesenho.alt = "";
                 Object.assign(imgDesenho.style, {
                     position: 'absolute', top: '0', left: '0',
                     width: '100%', height: '100%', zIndex: '20', pointerEvents: 'none'
@@ -3352,6 +3831,7 @@ document.getElementById('btnAdicionarContagem')?.addEventListener('click', () =>
     document.getElementById('inputTituloContagem').value = '';
     document.getElementById('inputDataContagem').value = '';
     document.getElementById('modalConfigContagem').classList.remove('escondido');
+    tornarModalAcessivel('modalConfigContagem');
 });
 
 document.getElementById('btnSalvarContagem')?.addEventListener('click', async () => {
@@ -3392,6 +3872,7 @@ function escutarContagens() {
                 const btnExcluir = document.createElement('button');
                 btnExcluir.innerText = '🗑️';
                 btnExcluir.className = 'btn-pequeno btn-sair';
+                btnExcluir.setAttribute('aria-label', 'Excluir contagem');
                 btnExcluir.style.position = 'absolute';
                 btnExcluir.style.top = '5px';
                 btnExcluir.style.right = '5px';
@@ -3465,6 +3946,7 @@ document.getElementById('btnInserirCarimbo')?.addEventListener('click', () => {
     document.getElementById('inputLocalCarimbo').value = '';
     document.getElementById('inputDataCarimbo').value = '';
     document.getElementById('modalCarimboPassaporte').classList.remove('escondido');
+    tornarModalAcessivel('modalCarimboPassaporte');
     document.getElementById('menuStickers').classList.add('escondido');
 });
 
@@ -3604,6 +4086,7 @@ async function trancarPorInatividade() {
         if (config.temSenha) {
             telaTrancada = true;
             document.getElementById('telaBloqueioInatividade').classList.remove('escondido');
+            tornarModalAcessivel('telaBloqueioInatividade', { permitirEsc: false });
             document.getElementById('inputDesbloqueioInatividade').value = '';
             document.getElementById('msgErroDesbloqueio').innerText = '';
         }
