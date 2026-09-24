@@ -70,56 +70,72 @@
     <div id="telaApp" class="tela-app escondido">
 
         <div id="toolbarFlutuante" class="toolbar-flutuante escondido">
-            <button class="btn-format" id="btnNegrito" title="Negrito"><b>B</b></button>
-            <button class="btn-format" id="btnSublinhado" title="Sublinhar"><u>U</u></button>
-            <button class="btn-format" id="btnDestacar" title="Marca-texto">🖍️</button>
-            <button class="btn-format" id="btnLimparFormato" title="Remover Formatação">🧹</button>
+            <button class="btn-format" id="btnNegrito" title="Negrito" aria-label="Negrito"><b>B</b></button>
+            <button class="btn-format" id="btnSublinhado" title="Sublinhar" aria-label="Sublinhar"><u>U</u></button>
+            <button class="btn-format" id="btnDestacar" title="Marca-texto" aria-label="Marca-texto">🖍️</button>
+            <button class="btn-format" id="btnLimparFormato" title="Remover Formatação"
+                aria-label="Remover formatação">🧹</button>
         </div>
         <div id="toolbarImagem" class="toolbar-flutuante escondido">
-            <button class="btn-format" id="btnImgEsq" title="Esquerda">⬅️</button>
-            <button class="btn-format" id="btnImgCentro" title="Centro">⏹️</button>
-            <button class="btn-format" id="btnImgDir" title="Direita">➡️</button>
+            <button class="btn-format" id="btnImgEsq" title="Esquerda"
+                aria-label="Alinhar imagem à esquerda">⬅️</button>
+            <button class="btn-format" id="btnImgCentro" title="Centro" aria-label="Centralizar imagem">⏹️</button>
+            <button class="btn-format" id="btnImgDir" title="Direita" aria-label="Alinhar imagem à direita">➡️</button>
             <span style="border-left: 1px solid #555; margin: 0 5px;"></span>
-            <button class="btn-format" id="btnImgAumentar" title="Aumentar">➕</button>
-            <button class="btn-format" id="btnImgDiminuir" title="Diminuir">➖</button>
+            <button class="btn-format" id="btnImgAumentar" title="Aumentar" aria-label="Aumentar imagem">➕</button>
+            <button class="btn-format" id="btnImgDiminuir" title="Diminuir" aria-label="Diminuir imagem">➖</button>
             <span style="border-left: 1px solid #555; margin: 0 5px;"></span>
-            <button class="btn-format" id="btnImgApagar" title="Apagar" style="color: #ff5252;">🗑️</button>
+            <button class="btn-format" id="btnImgApagar" title="Apagar" aria-label="Apagar imagem"
+                style="color: #ff5252;">🗑️</button>
         </div>
         <div id="toolbarSticker" class="toolbar-flutuante escondido">
-            <button class="btn-format" id="btnStickerGirarEsq" title="Girar Esquerda">↺</button>
-            <button class="btn-format" id="btnStickerGirarDir" title="Girar Direita">↻</button>
+            <button class="btn-format" id="btnStickerGirarEsq" title="Girar Esquerda"
+                aria-label="Girar sticker à esquerda">↺</button>
+            <button class="btn-format" id="btnStickerGirarDir" title="Girar Direita"
+                aria-label="Girar sticker à direita">↻</button>
             <span class="divisor-toolbar"></span>
-            <button class="btn-format" id="btnStickerApagar" title="Apagar" style="color: #ff5252;">🗑️</button>
+            <button class="btn-format" id="btnStickerApagar" title="Apagar" aria-label="Apagar sticker"
+                style="color: #ff5252;">🗑️</button>
         </div>
 
         <div id="toolbarObjeto" class="toolbar-flutuante escondido">
-            <button class="btn-format" id="btnObjEditar" title="Editar Texto">✏️</button>
+            <button class="btn-format" id="btnObjEditar" title="Editar Texto"
+                aria-label="Editar texto do objeto">✏️</button>
             <span class="divisor-toolbar"></span>
-            <button class="btn-format" id="btnObjGirarEsq" title="Girar Esquerda">↺</button>
-            <button class="btn-format" id="btnObjGirarDir" title="Girar Direita">↻</button>
+            <button class="btn-format" id="btnObjGirarEsq" title="Girar Esquerda"
+                aria-label="Girar objeto à esquerda">↺</button>
+            <button class="btn-format" id="btnObjGirarDir" title="Girar Direita"
+                aria-label="Girar objeto à direita">↻</button>
             <span class="divisor-toolbar"></span>
-            <button class="btn-format" id="btnObjAumentar" title="Aumentar">➕</button>
-            <button class="btn-format" id="btnObjDiminuir" title="Diminuir">➖</button>
+            <button class="btn-format" id="btnObjAumentar" title="Aumentar" aria-label="Aumentar objeto">➕</button>
+            <button class="btn-format" id="btnObjDiminuir" title="Diminuir" aria-label="Diminuir objeto">➖</button>
             <span class="divisor-toolbar"></span>
-            <button class="btn-format" id="btnObjApagar" title="Apagar" style="color: #ff5252;">🗑️</button>
+            <button class="btn-format" id="btnObjApagar" title="Apagar" aria-label="Apagar objeto"
+                style="color: #ff5252;">🗑️</button>
         </div>
 
         <div id="toolbarDesenho" class="toolbar-flutuante escondido">
-            <button class="btn-format btn-ferramenta ativo" data-ferramenta="caneta" title="Caneta">✏️</button>
-            <button class="btn-format btn-ferramenta" data-ferramenta="marcador" title="Marcador Neon">🖍️</button>
-            <button class="btn-format btn-ferramenta" data-ferramenta="spray" title="Spray">💨</button>
-            <input type="color" id="inputCorDesenho" value="#ffffff" title="Escolher Cor">
+            <button class="btn-format btn-ferramenta ativo" data-ferramenta="caneta" title="Caneta"
+                aria-label="Ferramenta caneta">✏️</button>
+            <button class="btn-format btn-ferramenta" data-ferramenta="marcador" title="Marcador Neon"
+                aria-label="Ferramenta marcador neon">🖍️</button>
+            <button class="btn-format btn-ferramenta" data-ferramenta="spray" title="Spray"
+                aria-label="Ferramenta spray">💨</button>
+            <input type="color" id="inputCorDesenho" value="#ffffff" title="Escolher Cor"
+                aria-label="Escolher cor do desenho">
             <span class="divisor-toolbar"></span>
-            <button class="btn-format btn-ferramenta" data-ferramenta="borracha" title="Borracha">🧽</button>
-            <button class="btn-format" id="btnNovaLousa" title="Apagar Tudo" style="color: #ff5252;">🗑️</button>
+            <button class="btn-format btn-ferramenta" data-ferramenta="borracha" title="Borracha"
+                aria-label="Ferramenta borracha">🧽</button>
+            <button class="btn-format" id="btnNovaLousa" title="Apagar Tudo" style="color: #ff5252;"
+                aria-label="Apagar todo o desenho">🗑️</button>
             <span class="divisor-toolbar"></span>
-            <button class="btn-format" id="btnFecharDesenho" title="Concluir"
-                style="color: #4CAF50; font-weight: bold;">✅ Concluir</button>
+            <button class="btn-format" id="btnFecharDesenho" title="Concluir" style="color: #4CAF50; font-weight: bold;"
+                aria-label="Concluir desenho">✅ Concluir</button>
         </div>
 
         <div class="cabecalho-app" style="max-width: 1200px; margin-top: 20px;">
             <div>
-                <button id="btnVoltarDash" class="btn-pequeno">⬅</button>
+                <button id="btnVoltarDash" class="btn-pequeno" aria-label="Voltar ao painel">⬅</button>
                 <h1 id="tituloCadernoAtual" style="margin-top: 10px;">Nome do Caderno 📓</h1>
                 <div id="vistoPorUltimo"
                     style="font-size: 11px; color: var(--texto-secundario); margin-top: -5px; font-style: italic;">
@@ -127,11 +143,15 @@
 
                 <div class="painel-humor" id="painelDeHumor">
                     <span style="font-size: 12px; font-weight: bold; margin-right: 5px;">Nosso Clima:</span>
-                    <button class="btn-humor" data-humor="☀️" title="Feliz / Radiante">☀️</button>
-                    <button class="btn-humor" data-humor="☁️" title="Pensativo / Neutro">☁️</button>
-                    <button class="btn-humor" data-humor="🌧️" title="Triste / Cansado">🌧️</button>
-                    <button class="btn-humor" data-humor="🔥" title="Animado / Intenso">🔥</button>
-                    <button class="btn-humor" data-humor="🥰" title="Apaixonado">🥰</button>
+                    <button class="btn-humor" data-humor="☀️" title="Feliz / Radiante"
+                        aria-label="Feliz / Radiante">☀️</button>
+                    <button class="btn-humor" data-humor="☁️" title="Pensativo / Neutro"
+                        aria-label="Pensativo / Neutro">☁️</button>
+                    <button class="btn-humor" data-humor="🌧️" title="Triste / Cansado"
+                        aria-label="Triste / Cansado">🌧️</button>
+                    <button class="btn-humor" data-humor="🔥" title="Animado / Intenso"
+                        aria-label="Animado / Intenso">🔥</button>
+                    <button class="btn-humor" data-humor="🥰" title="Apaixonado" aria-label="Apaixonado">🥰</button>
                 </div>
             </div>
             <div class="cabecalho-direito">
@@ -188,16 +208,21 @@
                 </div>
 
                 <div id="menuStickers" class="menu-stickers escondido">
-                    <button class="btn-sticker">❤️</button><button class="btn-sticker">⭐</button><button
-                        class="btn-sticker">📌</button><button class="btn-sticker">🌸</button><button
-                        class="btn-sticker">🩹</button><button class="btn-sticker">✈️</button><button
-                        class="btn-sticker">☕</button><button class="btn-sticker">🎵</button><button
-                        class="btn-sticker">🍁</button><button class="btn-sticker">🔥</button>
-                    <button class="btn-sticker">🎨</button>
-                    <button class="btn-sticker">🎀</button>
-                    <button class="btn-sticker">🧸</button>
-                    <button class="btn-sticker">🎉</button>
-                    <button class="btn-sticker">💐</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de coração">❤️</button><button
+                        class="btn-sticker" aria-label="Adicionar sticker de estrela">⭐</button><button
+                        class="btn-sticker" aria-label="Adicionar sticker de pin">📌</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de flor">🌸</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de band-aid">🩹</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de avião">✈️</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de café">☕</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de nota musical">🎵</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de folha">🍁</button><button class="btn-sticker"
+                        aria-label="Adicionar sticker de fogo">🔥</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de paleta de tintas">🎨</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de laço">🎀</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de ursinho">🧸</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de festa">🎉</button>
+                    <button class="btn-sticker" aria-label="Adicionar sticker de buquê">💐</button>
                     <div class="grid-botoes-objetos">
                         <button id="btnInserirPostit"
                             style="width: 100%; margin-top: 5px; font-size: 13px; padding: 6px;background: #f1c40f; color: #333; box-shadow: 0 4px 0 #cca60d, 0 6px 10px rgba(0, 0, 0, 0.2);">📌
@@ -233,7 +258,7 @@
                 </div>
 
                 <div class="controles-paginacao">
-                    <button id="btnPaginaAnterior" class="btn-pequeno" disabled>⬅️</button>
+                    <button id="btnPaginaAnterior" class="btn-pequeno" disabled aria-label="Página anterior">⬅️</button>
                     <span style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
                         Pág.
                         <input type="number" id="inputIrParaPagina" min="1"
@@ -241,7 +266,7 @@
                             value="1">
                         de <span id="totalPaginasSpan">1</span>
                     </span>
-                    <button id="btnPaginaProxima" class="btn-pequeno" disabled>➡️</button>
+                    <button id="btnPaginaProxima" class="btn-pequeno" disabled aria-label="Página seguinte">➡️</button>
 
                     <span id="controlesEdicaoPagina">
                         <button id="btnNovaPagina" class="btn-pequeno"
@@ -339,9 +364,10 @@
         </nav>
     </div>
 
-    <div id="modalConfig" class="modal-overlay escondido">
+    <div id="modalConfig" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalConfig">
         <div class="modal-conteudo">
-            <h2>⚙️ Perfil Pessoal</h2>
+            <h2 id="tituloModalConfig">⚙️ Perfil Pessoal</h2>
             <div style="text-align: center; margin-bottom: 20px;">
                 <img id="avatarConfig" class="avatar" style="width: 70px; height: 70px; margin-bottom: 10px;" src=""
                     alt="Foto"><br>
@@ -362,6 +388,17 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <label style="font-weight: bold;">🌙 Modo Escuro:</label>
                 <label class="switch"><input type="checkbox" id="toggleModoEscuro"><span class="slider"></span></label>
+
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <label style="font-weight: bold;">🔊 Som:</label>
+                <label class="switch"><input type="checkbox" id="toggleSomAtivado"><span class="slider"></span></label>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <button id="btnAtivarNotificacoes" class="btn-pequeno" style="width: 100%;">🔔 Ativar
+                    notificações</button>
+                <small id="statusNotificacoesPush"
+                    style="display:block; margin-top:6px; color: var(--texto-secundario); font-size: 12px;"></small>
             </div>
             <button id="btnSairDash"
                 style="width: 100%; background-color: transparent; border: 1px solid #f44336; color: #f44336;">Sair
@@ -371,9 +408,10 @@
         </div>
     </div>
 
-    <div id="modalConfigCaderno" class="modal-overlay escondido">
+    <div id="modalConfigCaderno" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalConfigCaderno">
         <div class="modal-conteudo">
-            <h2>🎨 Estilo do Caderno</h2>
+            <h2 id="tituloModalConfigCaderno">🎨 Estilo do Caderno</h2>
             <div style="text-align: left;">
                 <label>Nome do Caderno:</label>
                 <input type="text" id="inputEditNomeCaderno" style="margin-bottom: 15px;">
@@ -446,9 +484,10 @@
         </div>
     </div>
 
-    <div id="modalParticipantes" class="modal-overlay escondido">
+    <div id="modalParticipantes" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalParticipantes">
         <div class="modal-conteudo" style="max-width: 500px;">
-            <h2>👥 Quem tem acesso</h2>
+            <h2 id="tituloModalParticipantes">👥 Quem tem acesso</h2>
             <ul id="listaDeParticipantesModal" style="text-align: left; max-height: 250px; overflow-y: auto;"></ul>
             <hr>
             <button id="btnSairDoCaderno" class="btn-sair" style="width: 100%; margin-bottom: 10px;">🚪 Sair deste
@@ -457,10 +496,11 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Fechar</button>
         </div>
     </div>
-    <div id="modalConvidar" class="modal-overlay escondido">
+    <div id="modalConvidar" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalConvidar">
         <div class="modal-conteudo">
-            <h2>💌 Convidar Amigo</h2><input type="email" id="inputEmailConvite" placeholder="amigo@email.com"
-                style="margin-bottom: 15px;"><label
+            <h2 id="tituloModalConvidar">💌 Convidar Amigo</h2><input type="email" id="inputEmailConvite"
+                placeholder="amigo@email.com" style="margin-bottom: 15px;"><label
                 style="text-align: left; display: block; margin-bottom: 5px; font-size: 14px;">Permissão
                 Inicial:</label><select id="selectPermissaoConvite" style="margin-bottom: 15px;">
                 <option value="editor">Editor (Escreve e Apaga)</option>
@@ -470,9 +510,10 @@
                 Convite</button><button class="btn-sair btn-fechar-modal" style="width: 100%;">Cancelar</button>
         </div>
     </div>
-    <div id="modalApagarTarefa" class="modal-overlay escondido">
+    <div id="modalApagarTarefa" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalApagarTarefa">
         <div class="modal-conteudo">
-            <h2>🗑️ Apagar Atividade</h2>
+            <h2 id="tituloModalApagarTarefa">🗑️ Apagar Atividade</h2>
             <p>Tem certeza que deseja apagar esta atividade?</p>
             <p id="textoTarefaApagar"
                 style="font-style: italic; color: var(--texto-secundario); font-size: 13px; margin-bottom: 20px;"></p>
@@ -481,21 +522,27 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalEditarTarefa" class="modal-overlay escondido">
+    <div id="modalEditarTarefa" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalEditarTarefa">
         <div class="modal-conteudo">
-            <h2>✏️ Editar Atividade</h2><input type="text" id="inputEdicaoTarefa" style="margin-bottom: 15px;"><button
-                id="btnSalvarEdicaoTarefa" style="width: 100%; margin-bottom: 10px;">Salvar Alteração</button><button
+            <h2 id="tituloModalEditarTarefa">✏️ Editar Atividade</h2><input type="text" id="inputEdicaoTarefa"
+                style="margin-bottom: 15px;"><button id="btnSalvarEdicaoTarefa"
+                style="width: 100%; margin-bottom: 10px;">Salvar Alteração</button><button
                 class="btn-secundario btn-fechar-modal"
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalWatchlist" class="modal-overlay escondido">
+    <div id="modalWatchlist" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalWatchlist">
         <div class="modal-conteudo">
             <h2 id="tituloModalWatchlist">🎬 Adicionar à Watchlist</h2>
             <div style="text-align: left;">
                 <label>Título:</label>
-                <input type="text" id="inputTituloWatchlist" placeholder="Ex: Breaking Bad"
-                    style="margin-bottom: 12px;">
+                <input type="text" id="inputTituloWatchlist" placeholder="Ex: Breaking Bad" autocomplete="off"
+                    style="margin-bottom: 4px;">
+                <div id="listaResultadosTMDB" class="tmdb-resultados escondido"></div>
+                <small id="statusBuscaTMDB"
+                    style="display:block; margin-bottom: 12px; color: var(--texto-secundario); font-size: 12px;"></small>
                 <label>Tipo:</label>
                 <select id="selectTipoWatchlist"
                     style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 5px;">
@@ -518,7 +565,8 @@
     </div>
 
     <!-- TELA CHEIA DA WATCHLIST -->
-    <div id="modalAnotacaoWatchlist" class="modal-overlay escondido" style="z-index: 5000;">
+    <div id="modalAnotacaoWatchlist" class="modal-overlay escondido" style="z-index: 5000;" role="dialog"
+        aria-modal="true" aria-labelledby="tituloModalAnotacao">
         <div class="modal-conteudo">
             <h2 id="tituloModalAnotacao">📝 Anotação</h2>
             <textarea id="inputAnotacaoWatchlist" rows="5"
@@ -531,9 +579,10 @@
         </div>
     </div>
 
-    <div id="modalExcluirWatchlist" class="modal-overlay escondido" style="z-index: 5000;">
+    <div id="modalExcluirWatchlist" class="modal-overlay escondido" style="z-index: 5000;" role="dialog"
+        aria-modal="true" aria-labelledby="tituloModalExcluirWatchlist">
         <div class="modal-conteudo">
-            <h2>🗑️ Excluir Título</h2>
+            <h2 id="tituloModalExcluirWatchlist">🗑️ Excluir Título</h2>
             <p>Deseja realmente remover <b id="nomeFilmeExcluir">este título</b> da watchlist?</p>
             <p style="color: #f44336; font-size: 13px; margin-bottom: 15px;">Todos os status, notas e anotações dos
                 participantes serão perdidos.</p>
@@ -548,7 +597,8 @@
     <div id="telaWatchlist" class="escondido">
         <div class="watchlist-fullscreen-header">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button id="btnVoltarWatchlist" class="btn-pequeno" style="font-size: 16px;">⬅</button>
+                <button id="btnVoltarWatchlist" class="btn-pequeno" style="font-size: 16px;"
+                    aria-label="Voltar">⬅</button>
                 <h1 style="margin: 0; font-size: 22px;">🎬 Watchlist</h1>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -573,9 +623,10 @@
         </div>
         <div id="gridWatchlist" class="watchlist-grid"></div>
     </div>
-    <div id="modalExcluirPagina" class="modal-overlay escondido">
+    <div id="modalExcluirPagina" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalExcluirPagina">
         <div class="modal-conteudo">
-            <h2>🗑️ Excluir Página</h2>
+            <h2 id="tituloModalExcluirPagina">🗑️ Excluir Página</h2>
             <p>Você está prestes a apagar <b>todo o conteúdo</b> desta página. O caderno será reorganizado
                 automaticamente.</p>
             <p style="color: #f44336; font-size: 13px;">Essa ação não pode ser desfeita.</p><button
@@ -584,9 +635,10 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalExcluirCaderno" class="modal-overlay escondido">
+    <div id="modalExcluirCaderno" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalExcluirCaderno">
         <div class="modal-conteudo">
-            <h2 style="color: #f44336;">⚠️ EXCLUIR CADERNO</h2>
+            <h2 id="tituloModalExcluirCaderno" style="color: #f44336;">⚠️ EXCLUIR CADERNO</h2>
             <p>Você tem certeza absoluta? Isso apagará <b>todas as histórias criadas</b> para todos os
                 participantes.</p><input type="text" id="inputConfirmarNomeCaderno"
                 placeholder="Digite o nome do caderno para confirmar"
@@ -598,9 +650,10 @@
                 Voltar</button>
         </div>
     </div>
-    <div id="modalCapsula" class="modal-overlay escondido">
+    <div id="modalCapsula" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalCapsula">
         <div class="modal-conteudo">
-            <h2>⏳ Cápsula do Tempo</h2>
+            <h2 id="tituloModalCapsula">⏳ Cápsula do Tempo</h2>
             <p style="font-size: 14px;">Tranque esta página. Ela só poderá ser visualizada e editada após a data
                 escolhida:</p><input type="date" id="inputDataCapsula" style="margin-bottom: 15px;"><button
                 id="btnSalvarCapsula" style="width: 100%; margin-bottom: 10px;">Trancar Página</button><button
@@ -608,9 +661,10 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalLimparLousa" class="modal-overlay escondido">
+    <div id="modalLimparLousa" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalLimparLousa">
         <div class="modal-conteudo">
-            <h2>🧽 Limpar Lousa</h2>
+            <h2 id="tituloModalLimparLousa">🧽 Limpar Lousa</h2>
             <p>Deseja realmente apagar todos os desenhos desta página?</p>
             <p style="color: #f44336; font-size: 13px; margin-bottom: 20px;">Essa ação não pode ser desfeita.</p>
             <button id="btnConfirmarLimparLousa" class="btn-sair" style="width: 100%; margin-bottom: 10px;">Sim, apagar
@@ -619,9 +673,10 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalEditarCarta" class="modal-overlay escondido">
+    <div id="modalEditarCarta" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalEditarCarta">
         <div class="modal-conteudo" style="max-width: 500px;">
-            <h2>✏️ Escrever Carta</h2>
+            <h2 id="tituloModalEditarCarta">✏️ Escrever Carta</h2>
             <textarea id="inputTextoCarta" rows="6"
                 style="width: 100%; padding: 10px; font-family: 'Caveat', cursive; font-size: 20px; border-radius: 8px; border: 1px solid var(--borda); margin-bottom: 15px;"></textarea>
             <button id="btnSalvarEdicaoCarta" style="width: 100%; margin-bottom: 10px;">Selar Carta</button>
@@ -630,9 +685,10 @@
         </div>
     </div>
 
-    <div id="modalEditarRaspadinha" class="modal-overlay escondido">
+    <div id="modalEditarRaspadinha" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalEditarRaspadinha">
         <div class="modal-conteudo">
-            <h2>🪙 Esconder Surpresa</h2>
+            <h2 id="tituloModalEditarRaspadinha">🪙 Esconder Surpresa</h2>
             <p style="font-size: 13px; color: var(--texto-secundario);">Ao salvar, a tinta prateada será restaurada para
                 esconder o novo texto.</p>
             <input type="text" id="inputTextoRaspadinha" maxlength="45" placeholder="Ex: Comprei ingressos pro show!"
@@ -643,19 +699,21 @@
         </div>
     </div>
 
-    <div id="modalLerCarta" class="modal-overlay escondido" style="z-index: 3000;">
+    <div id="modalLerCarta" class="modal-overlay escondido" style="z-index: 3000;" role="dialog" aria-modal="true"
+        aria-label="Leitura da carta">
         <div
             style="position: relative; width: 90%; max-width: 600px; background: #fffdf8; padding: 40px; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); font-family: 'Caveat', cursive; font-size: 26px; color: #333; line-height: 1.5; background-image: radial-gradient(#dcd0c0 1px, transparent 1px); background-size: 30px 30px;">
-            <button id="btnFecharLeituraCarta"
+            <button id="btnFecharLeituraCarta" aria-label="Fechar leitura da carta"
                 style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; color: #333; cursor: pointer; padding: 0; box-shadow: none;">✖</button>
             <div id="conteudoLeituraCarta"
                 style="max-height: 70vh; overflow-y: auto; outline: none; white-space: pre-wrap; word-wrap: break-word;">
             </div>
         </div>
     </div>
-    <div id="modalEditarPostit" class="modal-overlay escondido">
+    <div id="modalEditarPostit" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalEditarPostit">
         <div class="modal-conteudo">
-            <h2>📌 Escrever no Post-it</h2>
+            <h2 id="tituloModalEditarPostit">📌 Escrever no Post-it</h2>
             <textarea id="inputTextoPostit" rows="4"
                 style="width: 100%; padding: 10px; font-family: 'Caveat', cursive; font-size: 24px; background: #feff9c; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; color: #333;"></textarea>
             <button id="btnSalvarEdicaoPostit" style="width: 100%; margin-bottom: 10px;">Colar Post-it</button>
@@ -663,9 +721,10 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalAcessoCaderno" class="modal-overlay escondido" style="z-index: 4000;">
+    <div id="modalAcessoCaderno" class="modal-overlay escondido" style="z-index: 4000;" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalAcessoCaderno">
         <div class="modal-conteudo">
-            <h2 style="font-size: 28px;">🔒 Caderno Protegido</h2>
+            <h2 id="tituloModalAcessoCaderno" style="font-size: 28px;">🔒 Caderno Protegido</h2>
             <p style="font-size: 14px; color: var(--texto-secundario);">Este caderno possui um cadeado. Digite a senha
                 para abri-lo:</p>
             <input type="password" id="inputTentativaSenha" autocomplete="new-password" data-lpignore="true"
@@ -678,18 +737,20 @@
         </div>
     </div>
 
-    <div id="modalAcessoNegado" class="modal-overlay escondido" style="z-index: 4001;">
+    <div id="modalAcessoNegado" class="modal-overlay escondido" style="z-index: 4001;" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalAcessoNegado">
         <div class="modal-conteudo" style="border-top: 5px solid #f44336;">
             <div style="font-size: 50px; margin-bottom: 10px;">❌</div>
-            <h2 style="color: #f44336; margin-top: 0;">Acesso Negado</h2>
+            <h2 id="tituloModalAcessoNegado" style="color: #f44336; margin-top: 0;">Acesso Negado</h2>
             <p style="font-size: 15px; color: var(--texto-principal); margin-bottom: 20px;">A senha inserida está
                 incorreta. Você não tem permissão para ver estas memórias.</p>
             <button id="btnTentarSenhaNovamente" class="btn-sair" style="width: 100%;">Tentar Novamente</button>
         </div>
     </div>
-    <div id="modalConfigContagem" class="modal-overlay escondido">
+    <div id="modalConfigContagem" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalConfigContagem">
         <div class="modal-conteudo">
-            <h2>⏳ Configurar Contagem</h2>
+            <h2 id="tituloModalConfigContagem">⏳ Configurar Contagem</h2>
             <input type="text" id="inputTituloContagem" placeholder="Ex: Nossa Viagem para Paris"
                 style="margin-bottom: 10px; text-align: center; font-weight: bold;">
             <label style="font-size: 12px; color: var(--texto-secundario);">Data e Hora do Evento:</label>
@@ -700,9 +761,10 @@
         </div>
     </div>
 
-    <div id="modalCarimboPassaporte" class="modal-overlay escondido">
+    <div id="modalCarimboPassaporte" class="modal-overlay escondido" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalCarimboPassaporte">
         <div class="modal-conteudo">
-            <h2>🛂 Carimbar Passaporte</h2>
+            <h2 id="tituloModalCarimboPassaporte">🛂 Carimbar Passaporte</h2>
             <input type="text" id="inputLocalCarimbo" placeholder="Ex: Paris, França"
                 style="margin-bottom: 10px; text-align: center; font-weight: bold; font-size: 18px;">
             <label style="font-size: 12px; color: var(--texto-secundario);">Data da Viagem/Evento:</label>
@@ -714,10 +776,11 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="telaBloqueioInatividade" class="modal-overlay escondido"
+    <div id="telaBloqueioInatividade" class="modal-overlay escondido" role="dialog" aria-modal="true" +
+        aria-labelledby="tituloBloqueioInatividade" +
         style="z-index: 9999; backdrop-filter: blur(15px); background: rgba(0,0,0,0.5);">
         <div class="modal-conteudo">
-            <h2 style="color: #333; font-size: 28px;">⏸️ Ausente</h2>
+            <h2 id="tituloBloqueioInatividade" style="color: #333; font-size: 28px;">⏸️ Ausente</h2>
             <p style="font-size: 14px; color: var(--texto-secundario);">O caderno foi trancado por inatividade para sua
                 segurança.</p>
             <input type="password" id="inputDesbloqueioInatividade" autocomplete="new-password" data-lpignore="true"
@@ -727,9 +790,10 @@
             <div id="msgErroDesbloqueio" style="color: #f44336; font-size: 13px; margin-top: 10px; height: 15px;"></div>
         </div>
     </div>
-    <div id="modalTransferirDono" class="modal-overlay escondido" style="z-index: 5000;">
+    <div id="modalTransferirDono" class="modal-overlay escondido" style="z-index: 5000;" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalTransferirDono">
         <div class="modal-conteudo">
-            <h2>👑 Transferir Posse</h2>
+            <h2 id="tituloModalTransferirDono">👑 Transferir Posse</h2>
             <p style="font-size: 14px; color: var(--texto-secundario); margin-bottom: 15px;">Para sair, você precisa
                 passar a coroa de Dono(a) para outro participante:</p>
             <select id="selectNovoDono"
@@ -740,10 +804,11 @@
                 style="background-color: gray; width: 100%; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);">Cancelar</button>
         </div>
     </div>
-    <div id="modalConfirmarSaida" class="modal-overlay escondido" style="z-index: 6000;">
+    <div id="modalConfirmarSaida" class="modal-overlay escondido" style="z-index: 6000;" role="dialog" aria-modal="true"
+        aria-labelledby="tituloModalConfirmarSaida">
         <div class="modal-conteudo" style="border-top: 5px solid #f44336;">
             <div style="font-size: 40px; margin-bottom: 10px;">🚪</div>
-            <h2 style="color: #f44336; margin-top: 0;">Sair do Caderno</h2>
+            <h2 id="tituloModalConfirmarSaida" style="color: #f44336; margin-top: 0;">Sair do Caderno</h2>
             <p style="font-size: 15px; color: var(--texto-principal); margin-bottom: 20px;">Tem certeza que deseja sair?
                 Você perderá o acesso a todas as memórias criadas neste caderno.</p>
             <button id="btnConfirmarSaidaAcao" class="btn-sair" style="width: 100%; margin-bottom: 10px;">Sim, quero
