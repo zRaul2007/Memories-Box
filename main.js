@@ -2620,6 +2620,7 @@ function iniciarRotinasDoCaderno() {
                         </div>`;
 
                     if (uid !== usuarioAtual?.uid) {
+                        console.log('[DEBUG cursor]', { uidDoOutro: uid, paginaDele: dados.paginaAtual, tipoPaginaDele: typeof dados.paginaAtual, minhaPagina: paginaAtual, tipoMinhaPagina: typeof paginaAtual, cursorXDele: dados.cursorX, cursorYDele: dados.cursorY, folhaA4Wrapper });
                         const estaNaMinhaPagina = dados.paginaAtual === paginaAtual;
 
                         if (estaNaMinhaPagina && dados.cursorX != null && dados.cursorY != null) {
