@@ -588,6 +588,51 @@ body.dark-mode .caixa-convites {
     overflow: hidden;
 }
 
+/* ==========================================
+   ANIMAÇÃO DE VIRAR PÁGINA
+   ========================================== */
+.folha-a4.virando-saida {
+    animation: virarPaginaSaida 0.22s ease-in forwards;
+    backface-visibility: hidden;
+}
+
+.folha-a4.virando-entrada {
+    animation: virarPaginaEntrada 0.22s ease-out forwards;
+    backface-visibility: hidden;
+}
+
+@keyframes virarPaginaSaida {
+    from {
+        transform: perspective(1400px) rotateY(0deg);
+        opacity: 1;
+    }
+
+    to {
+        transform: perspective(1400px) rotateY(var(--rot-saida, 90deg));
+        opacity: 0.35;
+    }
+}
+
+@keyframes virarPaginaEntrada {
+    from {
+        transform: perspective(1400px) rotateY(var(--rot-entrada, -90deg));
+        opacity: 0.35;
+    }
+
+    to {
+        transform: perspective(1400px) rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .folha-a4.virando-saida,
+    .folha-a4.virando-entrada {
+        animation: none !important;
+    }
+}
+
 body.dark-mode .folha-a4 {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
 }
@@ -1496,6 +1541,119 @@ body.dark-mode .tipo-serie {
 body.dark-mode .tipo-filme {
     background: #28394d;
     color: #a3c9e8;
+}
+
+/* ==========================================
+   TMDB — SUGESTÕES DE BUSCA E DADOS EXTRAS
+   ========================================== */
+.tmdb-resultados {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--borda);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    background: var(--bg-elevado);
+}
+
+.tmdb-resultado-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--borda);
+    transition: background 0.15s;
+}
+
+.tmdb-resultado-item:last-child {
+    border-bottom: none;
+}
+
+.tmdb-resultado-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.dark-mode .tmdb-resultado-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.tmdb-resultado-poster {
+    width: 34px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--bg-fundo);
+}
+
+.tmdb-resultado-poster-vazio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.tmdb-resultado-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tmdb-resultado-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-principal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tmdb-resultado-ano {
+    font-size: 11px;
+    color: var(--texto-secundario);
+}
+
+/* Sinopse e nota do TMDB no card do grid */
+.watchlist-card-tmdb {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.watchlist-nota-tmdb {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-warning);
+    width: fit-content;
+}
+
+.watchlist-sinopse {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--texto-secundario);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Preview compacto (sidebar) */
+.watchlist-preview-item {
+    border-top: 1px solid var(--borda);
+    padding-top: 6px;
+}
+
+.watchlist-preview-nota {
+    color: var(--accent-warning);
+    font-weight: 600;
+}
+
+.watchlist-preview-sinopse {
+    font-size: 11px;
+    color: var(--texto-secundario);
+    margin-top: 2px;
 }
 
 .watchlist-status-badge {
@@ -2547,7 +2705,8 @@ body.dark-mode .postit-objeto {
     position: absolute;
     pointer-events: none;
     z-index: 9999;
-    transition: transform 0.1s linear;
+    transition: transform 0.1s linear, opacity 0.4s ease;
+    opacity: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
