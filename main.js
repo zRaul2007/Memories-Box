@@ -1312,7 +1312,12 @@ document.addEventListener('selectionchange', () => {
 document.getElementById('btnNegrito')?.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('bold', false, null); });
 document.getElementById('btnSublinhado')?.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('underline', false, null); });
 document.getElementById('btnDestacar')?.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('backColor', false, '#ffeb3b'); document.execCommand('hiliteColor', false, '#ffeb3b'); document.execCommand('foreColor', false, '#000000'); });
-document.getElementById('btnLimparFormato')?.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('removeFormat', false, null); const corPadrao = document.body.classList.contains('dark-mode') ? '#f5f5f5' : '#333333'; document.execCommand('foreColor', false, corPadrao); document.execCommand('backColor', false, 'transparent'); });
+document.getElementById('btnLimparFormato')?.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    document.execCommand('removeFormat', false, null);
+    document.execCommand('foreColor', false, 'var(--texto-principal)');
+    document.execCommand('backColor', false, 'transparent');
+});
 
 function salvarTextoFirebase() {
     if (minhaPermissaoAtual !== 'leitor' && cadernoAtualId) {
@@ -2620,7 +2625,6 @@ function iniciarRotinasDoCaderno() {
                         </div>`;
 
                     if (uid !== usuarioAtual?.uid) {
-                        console.log('[DEBUG cursor]', { uidDoOutro: uid, paginaDele: dados.paginaAtual, tipoPaginaDele: typeof dados.paginaAtual, minhaPagina: paginaAtual, tipoMinhaPagina: typeof paginaAtual, cursorXDele: dados.cursorX, cursorYDele: dados.cursorY, folhaA4Wrapper });
                         const estaNaMinhaPagina = dados.paginaAtual === paginaAtual;
 
                         if (estaNaMinhaPagina && dados.cursorX != null && dados.cursorY != null) {
