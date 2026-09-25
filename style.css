@@ -2703,6 +2703,8 @@ body.dark-mode .postit-objeto {
    ========================================== */
 .cursor-alheio {
     position: absolute;
+    top: 0;
+    left: 0;
     pointer-events: none;
     z-index: 9999;
     transition: transform 0.1s linear, opacity 0.4s ease;
