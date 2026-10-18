@@ -1898,7 +1898,7 @@ body.dark-mode .status-assistido {
 .watchlist-fullscreen-header {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 40;
     display: flex;
     justify-content: space-between;
     align-items: center;
