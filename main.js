@@ -1315,7 +1315,6 @@ document.getElementById('btnDestacar')?.addEventListener('mousedown', (e) => { e
 document.getElementById('btnLimparFormato')?.addEventListener('mousedown', (e) => {
     e.preventDefault();
     document.execCommand('removeFormat', false, null);
-    document.execCommand('foreColor', false, 'var(--texto-principal)');
     document.execCommand('backColor', false, 'transparent');
 });
 
@@ -3560,6 +3559,71 @@ document.getElementById('btnSalvarWatchlist')?.addEventListener('click', async (
     document.getElementById('modalWatchlist').classList.add('escondido');
 });
 
+// Rejeita se a promessa demorar mais que `ms` (evita "Gerando PDF..." infinito)
+function comTimeout(promessa, ms, mensagem) {
+    return Promise.race([
+        promessa,
+        new Promise((_, rej) => setTimeout(() => rej(new Error(mensagem || 'Tempo esgotado')), ms))
+    ]);
+}
+
+// ==========================================
+// PDF: CORREÇÃO DO MARCA-TEXTO (html2canvas)
+// ==========================================
+// O html2canvas desenha o fundo de um <span> que quebra em várias linhas como UM
+// retângulo único (a caixa que envolve todas as linhas) e ainda o pinta por cima do
+// texto que vem antes dele. Resultado: faixa amarela gigante e palavras "apagadas".
+// Solução: cada palavra do trecho destacado vira um inline-block próprio, com o
+// fundo amarelo dela mesma — assim cada caixa tem exatamente uma linha.
+function corrigirMarcaTextoParaPDF(raiz) {
+    const semFundo = (c) => !c || c === 'transparent' || c === 'rgba(0, 0, 0, 0)';
+
+    const destacados = Array.from(raiz.querySelectorAll('span, font, mark')).filter(el => {
+        if (el.closest('.obj-flutuante, .polaroid, .fita-cassete, .card-pergunta')) return false;
+        const cs = getComputedStyle(el);
+        return cs.display === 'inline' && !semFundo(cs.backgroundColor);
+    });
+
+    // Sublinhado/riscado não passa para dentro de inline-block, então copiamos à mão
+    const decoracaoHerdada = (el) => {
+        const linhas = new Set();
+        for (let n = el; n && n !== raiz.parentNode; n = n.parentElement) {
+            getComputedStyle(n).textDecorationLine.split(' ').forEach(l => {
+                if (l === 'underline' || l === 'line-through') linhas.add(l);
+            });
+        }
+        return Array.from(linhas).join(' ');
+    };
+
+    // Do mais interno para o mais externo
+    destacados.reverse().forEach(el => {
+        const cor = getComputedStyle(el).backgroundColor;
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const textos = [];
+        while (walker.nextNode()) textos.push(walker.currentNode);
+
+        textos.forEach(node => {
+            const pai = node.parentElement;
+            if (!pai || pai.dataset.pdfMarca) return; // já tratado
+            const partes = node.nodeValue.match(/\S+\s*|\s+/g);
+            if (!partes) return;
+            const decoracao = decoracaoHerdada(pai);
+            const frag = document.createDocumentFragment();
+            partes.forEach(txt => {
+                const w = document.createElement('span');
+                w.dataset.pdfMarca = '1';
+                w.textContent = txt;
+                w.style.cssText = `display:inline-block;white-space:pre;vertical-align:baseline;line-height:1.25;background-color:${cor};`;
+                if (decoracao) w.style.textDecoration = decoracao;
+                frag.appendChild(w);
+            });
+            node.parentNode.replaceChild(frag, node);
+        });
+
+        el.style.backgroundColor = 'transparent';
+    });
+}
+
 // ==========================================
 // 13. EXPORTAÇÃO PARA PDF
 // ==========================================
@@ -3595,126 +3659,99 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
         const todosStickers = stickersSnap.val() || {};
         const todosDesenhos = desenhosSnap.val() || {};
 
-        // Determina famílias de fonte
-        const fontFamily =
-            classeFonte === 'fonte-cursiva' ? "'Caveat', cursive" :
-                classeFonte === 'fonte-maquina' ? "'Courier Prime', monospace" :
-                    classeFonte === 'fonte-elegante' ? "'Lora', serif" : "'Inter', sans-serif";
+        // Tema CLARO fixo: o PDF nunca herda o modo escuro do site
+        const TEMA_PDF_CLARO = '--bg-fundo:#faf6f0;--bg-caixas:#fffdf8;--bg-elevado:#ffffff;--texto-principal:#3c322a;--texto-secundario:#9a8a78;--borda:#e8ddd0;color:#3c322a;';
 
-        // Função auxiliar: monta o HTML de uma página
+        // CSS temporário só para a exportação: trava a folha em 800x1122 (mesma
+        // proporção do editor) e ignora as regras @media do mobile.
+        const estiloPDF = document.createElement('style');
+        estiloPDF.id = 'estiloTemporarioPDF';
+        estiloPDF.textContent = `
+            .pdf-folha { position: relative !important; width: 800px !important; min-width: 800px !important; max-width: 800px !important;
+                height: 1122px !important; min-height: 1122px !important; max-height: 1122px !important; margin: 0 !important;
+                border: none !important; border-radius: 0 !important; box-shadow: none !important; overflow: hidden !important;
+                animation: none !important; transform: none !important; }
+            .pdf-folha .editor-rico { width: 100% !important; height: 100% !important; min-height: 0 !important; max-height: 100% !important;
+                padding: 40px !important; font-size: 16px !important; overflow: hidden !important; }
+        `;
+        document.head.appendChild(estiloPDF);
+
+        // Monta a página com a MESMA estrutura e classes da folha do editor
+        // (.folha-a4 > .editor-rico + .area-stickers + desenho). Assim os objetos
+        // flutuantes (post-it, ingresso...) usam a mesma origem de coordenadas
+        // do site e não deslocam mais.
         const montarPaginaHTML = (i) => {
             const anotacaoData = todasAnotacoes[`pagina_${i}`] || {};
 
-            // Fundo
-            let bgColor = '#ffffff';
-            let bgImage = '';
-            let bgSize = '';
-            if (classeFundo === 'fundo-linhas') {
-                bgImage = 'repeating-linear-gradient(transparent, transparent 29px, #e8ddd0 29px, #e8ddd0 30px)';
-            } else if (classeFundo === 'fundo-pontilhado') {
-                bgColor = '#fdfbf7';
-                bgImage = 'radial-gradient(#9a8a78 1px, transparent 1px)';
-                bgSize = '20px 20px';
-            } else if (classeFundo === 'fundo-quadriculado') {
-                bgColor = '#fdfbf7';
-                bgImage = 'linear-gradient(#e8ddd0 1px, transparent 1px), linear-gradient(90deg, #e8ddd0 1px, transparent 1px)';
-                bgSize = '20px 20px';
-            }
-
-            const div = document.createElement('div');
-            Object.assign(div.style, {
-                width: '794px',          // A4 @ 96dpi
-                minHeight: '1123px',
-                padding: '60px 60px',
-                boxSizing: 'border-box',
-                backgroundColor: bgColor,
-                backgroundImage: bgImage,
-                backgroundSize: bgSize,
-                fontFamily: fontFamily,
-                fontSize: '16px',
-                lineHeight: '1.7',
-                color: '#111',
-                position: 'relative',
-                overflow: 'visible',
-            });
+            const folha = document.createElement('div');
+            folha.className = `folha-a4 pdf-folha ${classeFonte} ${classeFundo}`;
+            folha.style.cssText = TEMA_PDF_CLARO;
 
             if (anotacaoData.bloqueadoAte && anotacaoData.bloqueadoAte > Date.now()) {
-                div.innerHTML = `<div style="text-align:center; padding-top:200px;"><h2 style="color:#111;">🔒 Cápsula do Tempo</h2><p style="color:#333;">Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
-                return div;
+                folha.innerHTML = `<div style="text-align:center; padding-top:200px;"><h2 style="color:#3c322a;">🔒 Cápsula do Tempo</h2><p>Página bloqueada até ${new Date(anotacaoData.bloqueadoAte).toLocaleDateString('pt-BR')}</p></div>`;
+                return folha;
             }
 
-            // Número de página
-            const numPag = document.createElement('div');
-            numPag.style.cssText = 'position:absolute;bottom:20px;right:30px;font-size:12px;color:#999;font-family:Inter,sans-serif;';
-            numPag.textContent = `Página ${i}`;
-            div.appendChild(numPag);
-
             // Texto
-            const divTexto = document.createElement('div');
-            Object.assign(divTexto.style, {
-                width: '100%', overflow: 'visible', border: 'none',
-                padding: '0', wordBreak: 'break-word',
-                position: 'relative', zIndex: '1',
-            });
+            const editor = document.createElement('div');
+            editor.className = 'editor-rico';
             let htmlTexto = anotacaoData.texto || "<em style='color:#bbb;'>Página em branco.</em>";
 
             // === CORREÇÕES DE CORES PARA PDF (dark-mode → impressão) ===
-            // 1. Força todas as cores de texto claras para preto
-            htmlTexto = htmlTexto.replace(/color\s*:\s*(#fff[a-f0-9]*|white|#f[0-9a-f]{5}|#e[0-9a-f]{5}|rgb\(\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*\))/gi, 'color:#111');
+            // 1. Força cores de TEXTO claras para escuro. O (^|[\s;"']) evita casar
+            //    "background-color:", que antes era corrompido por esta regex.
+            htmlTexto = htmlTexto.replace(/(^|[\s;"'])color\s*:\s*(#fff[a-f0-9]*|white|#f[0-9a-f]{5}|#e[0-9a-f]{5}|rgb\(\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*,\s*2[0-5][0-9]\s*\))/gi, '$1color:#111');
             // 2. Garante que texto dentro de <mark> fique sempre visível (preto sobre amarelo)
             htmlTexto = htmlTexto.replace(/<mark/gi, '<mark style="color:#111!important;background-color:#fef08a;"');
 
-            divTexto.innerHTML = htmlTexto;
+            editor.innerHTML = htmlTexto;
 
-            // Força cor escura em TODOS os elementos filhos para garantir legibilidade no PDF
-            divTexto.querySelectorAll('*').forEach(el => {
-                const computedColor = el.style.color;
-                if (computedColor) {
-                    const c = computedColor.toLowerCase();
-                    // Cores claras típicas do dark-mode
-                    if (c.includes('255') || c.includes('fff') || c.includes('f5f5') ||
-                        c.includes('e8e') || c.includes('ede') || c.includes('faf') ||
-                        c === 'white' || c === '#fff' || c === '#ffffff') {
-                        el.style.color = '#111';
-                    }
-                }
-                // Garante que objetos flutuantes mantenham position:absolute no PDF
-                if (el.classList.contains('obj-flutuante')) {
-                    el.style.position = 'absolute';
-                    el.style.zIndex = '15';
+            // Imagens com loading="lazy" NUNCA carregam dentro do contêiner invisível
+            // (fora da tela) e travavam a geração. Força carregamento imediato.
+            editor.querySelectorAll('img').forEach(img => { img.loading = 'eager'; });
+
+            editor.querySelectorAll('*').forEach(el => {
+                const c = (el.style.color || '').toLowerCase();
+                if (c && (c.includes('255') || c.includes('fff') || c.includes('f5f5') ||
+                    c.includes('e8e') || c.includes('ede') || c.includes('faf') || c === 'white')) {
+                    el.style.color = '#111';
                 }
             });
+            folha.appendChild(editor);
 
-            div.appendChild(divTexto);
-
-            // Desenho
-            const desenhoDaPagina = todosDesenhos[`pagina_${i}`];
-            if (desenhoDaPagina && desenhoDaPagina.img) {
-                const imgDesenho = document.createElement('img');
-                imgDesenho.src = desenhoDaPagina.img;
-                imgDesenho.alt = "";
-                Object.assign(imgDesenho.style, {
-                    position: 'absolute', top: '0', left: '0',
-                    width: '100%', height: '100%', zIndex: '20', pointerEvents: 'none'
-                });
-                div.appendChild(imgDesenho);
-            }
-
-            // Stickers (z-index acima dos objetos flutuantes para ficarem na frente)
+            // Stickers: mesma camada (.area-stickers / .sticker) do editor
+            const areaS = document.createElement('div');
+            areaS.className = 'area-stickers';
             const stickersDaPagina = todosStickers[`pagina_${i}`] || {};
             for (const key in stickersDaPagina) {
                 const s = stickersDaPagina[key];
                 const divS = document.createElement('div');
-                divS.innerText = s.emoji;
-                Object.assign(divS.style, {
-                    position: 'absolute', fontSize: '45px',
-                    left: `${s.x}px`, top: `${s.y}px`,
-                    transform: `rotate(${s.rot || 0}deg)`, zIndex: '50'
-                });
-                div.appendChild(divS);
+                divS.className = 'sticker';
+                divS.textContent = s.emoji;
+                divS.style.left = `${s.x}px`;
+                divS.style.top = `${s.y}px`;
+                divS.style.transform = `rotate(${s.rot || 0}deg)`;
+                areaS.appendChild(divS);
+            }
+            folha.appendChild(areaS);
+
+            // Desenho (mesma camada .camada-desenho, z-index 5, abaixo dos stickers)
+            const desenhoDaPagina = todosDesenhos[`pagina_${i}`];
+            if (desenhoDaPagina && desenhoDaPagina.img) {
+                const imgDesenho = document.createElement('img');
+                imgDesenho.className = 'camada-desenho';
+                imgDesenho.src = desenhoDaPagina.img;
+                imgDesenho.alt = "";
+                folha.appendChild(imgDesenho);
             }
 
-            return div;
+            // Número de página
+            const numPag = document.createElement('div');
+            numPag.style.cssText = 'position:absolute;bottom:20px;right:30px;font-size:12px;color:#999;font-family:Inter,sans-serif;z-index:60;';
+            numPag.textContent = `Página ${i}`;
+            folha.appendChild(numPag);
+
+            return folha;
         };
 
         // Container invisível mas DENTRO do layout (opacity:0) para html2canvas calcular dimensões
@@ -3723,7 +3760,7 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             position: 'fixed',
             top: '0',
             left: '-9999px',
-            width: '794px',
+            width: '800px',
             zIndex: '1',
             opacity: '0',
             pointerEvents: 'none',
@@ -3761,30 +3798,36 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
             renderContainer.innerHTML = '';
             renderContainer.appendChild(paginaEl);
 
-            // Aguarda imagens da página
-            const imgs = paginaEl.querySelectorAll('img');
-            await Promise.all(Array.from(imgs).map(img =>
-                img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
-            ));
+            // Precisa rodar com a página já no DOM (usa getComputedStyle)
+            corrigirMarcaTextoParaPDF(paginaEl);
+
+            // Aguarda fontes e imagens da página (com limite de tempo: nunca trava)
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            const imgs = Array.from(paginaEl.querySelectorAll('img'));
+            await Promise.all(imgs.map(img => Promise.race([
+                img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; }),
+                new Promise(r => setTimeout(r, 8000))
+            ])));
 
             // Pausa extra para garantir o reflow
             await new Promise(r => setTimeout(r, 200));
 
-            const canvas = await html2canvas(paginaEl, {
+            const canvas = await comTimeout(html2canvas(paginaEl, {
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#ffffff',
                 logging: false,
-                width: 794,
-                windowWidth: 794,
-            });
+                width: 800,
+                height: 1122,
+                windowWidth: 1280, // > 768px: nunca aplica as regras @media do mobile
+                imageTimeout: 8000,
+            }), 60000, `A página ${i} demorou demais para ser renderizada`);
 
             const imgData = canvas.toDataURL('image/jpeg', 0.92);
-            const imgH = (canvas.height / canvas.width) * pdfW;
 
             pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, Math.min(imgH, pdfH));
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
         }
 
         // === PLANOS / METAS ===
@@ -3815,12 +3858,14 @@ document.getElementById('btnExportarPDF')?.addEventListener('click', async () =>
         }
 
         renderContainer.remove();
+        estiloPDF.remove();
         pdf.save(`${tituloCaderno}.pdf`);
 
     } catch (erroGeral) {
         console.error('Erro geral PDF:', erroGeral);
         if (window.mostrarToast) window.mostrarToast(`Erro: ${erroGeral.message}`, '❌');
     } finally {
+        document.getElementById('estiloTemporarioPDF')?.remove();
         divLoading.remove();
     }
 });
